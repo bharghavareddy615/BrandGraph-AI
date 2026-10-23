@@ -1,0 +1,54 @@
+[
+  {
+    "id": "SRC-001",
+    "title": "Inkloom Q4 Benchmark Report (2025)",
+    "source_type": "Benchmark Study",
+    "publication_date": "2025-11-20",
+    "excerpt": "Inkloom Sentinel scans enterprise repositories with an observed latency of under 45ms per 1,000 code lines under standard load. It achieved 99.4% detection on the OWASP Top 10 synthetic test suite.",
+    "provenance": "Engineering Performance Lab \u2014 Internal Synthetic Benchmark",
+    "is_synthetic": true,
+    "metadata": {
+      "sample_size": 50000,
+      "environment": "AWS us-east-1 c6i.4xlarge"
+    }
+  },
+  {
+    "id": "SRC-002",
+    "title": "Inkloom Architecture Whitepaper v3.2",
+    "source_type": "Technical Whitepaper",
+    "publication_date": "2025-08-14",
+    "excerpt": "Inkloom Copilot integrates with enterprise LLMs via role-based access control and maintains customer data boundary isolation. It does not store plaintext prompts in public training clusters.",
+    "provenance": "Architecture Review Board \u2014 Approved Technical Specification",
+    "is_synthetic": true,
+    "metadata": {
+      "version": "3.2",
+      "clearance": "Public"
+    }
+  },
+  {
+    "id": "SRC-003",
+    "title": "SOC2 Type II & ISO 27001 Audit Summary (2025)",
+    "source_type": "Compliance Audit Summary",
+    "publication_date": "2025-10-01",
+    "excerpt": "All network traffic in Inkloom Cloud uses TLS 1.3 in transit and AES-256 at rest. Zero unplanned outages were recorded across the multi-tenant cluster over 180 continuous operating days.",
+    "provenance": "Synthetic Compliance Certification Summary",
+    "is_synthetic": true,
+    "metadata": {
+      "auditor": "SynthoAudit Global",
+      "standard": "SOC2-Type-II"
+    }
+  },
+  {
+    "id": "SRC-004",
+    "title": "Third-Party Comparative Analysis by TechVerify",
+    "source_type": "Third-Party Evaluation",
+    "publication_date": "2025-12-05",
+    "excerpt": "Inkloom Sentinel reduced false positives by 42% compared to standard regex-only scanners in enterprise trial deployments.",
+    "provenance": "Independent Evaluator Trial Report (Synthetic)",
+    "is_synthetic": true,
+    "metadata": {
+      "trial_participants": 12,
+      "duration_weeks": 6
+    }
+  }
+]

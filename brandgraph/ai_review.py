@@ -1,0 +1,189 @@
+"""Optional AI Review Engine with Provider Interface for BrandGraph AI.
+
+Executes tone/voice analysis, messaging consistency, and promotional claim inspection.
+Safely falls back when no API key is provided, network is unavailable, or outputs are malformed.
+"""
+
+from enum import Enum
+import json
+from typing import Dict, List, Optional
+import requests
+
+from brandgraph.config import config
+from brandgraph.schemas import (
+    AIReviewResponse,
+    AIReviewFinding,
+    Finding,
+    FindingCategory,
+    Severity,
+    EvidenceStatus,
+    SearchResult,
+)
+
+
+class ProviderStatus(str, Enum):
+    DISABLED = "Disabled (Local Mode)"
+    UNCONFIGURED = "Unconfigured (No API Key)"
+    READY = "Ready"
+    ERROR = "Connection Error"
+
+
+class AIReviewService:
+    """Manages optional external LLM provider calls with strict schema validation and safe fallbacks."""
+
+    def __init__(self):
+        self.provider = config.ai_provider
+        self.api_key = config.ai_api_key
+        self.model_name = config.ai_model_name
+        self.timeout = config.ai_timeout
+        self.allow_external = config.allow_external_ai
+
+    def get_provider_status(self) -> Dict[str, str]:
+        """Returns safe status report without revealing sensitive API secrets."""
+        if not self.allow_external or self.provider == "none":
+            return {
+                "status": ProviderStatus.DISABLED.value,
+                "provider": "Local Offline Engine",
+                "model": "None (Deterministic & RAG Mode)",
+                "message": "External AI network calls are disabled. Content is kept 100% local.",
+            }
+        if not self.api_key or not self.api_key.strip():
+            return {
+                "status": ProviderStatus.UNCONFIGURED.value,
+                "provider": self.provider.title(),
+                "model": self.model_name,
+                "message": "AI Provider is selected but AI_API_KEY is not set. Running in deterministic mode.",
+            }
+        return {
+            "status": ProviderStatus.READY.value,
+            "provider": self.provider.title(),
+            "model": self.model_name,
+            "message": f"Ready to send content to {self.provider.title()} for tone and messaging analysis.",
+        }
+
+    def review(
+        self,
+        content: str,
+        retrieved_evidence: List[SearchResult],
+    ) -> Optional[AIReviewResponse]:
+        """Calls external AI provider if configured, returning validated AIReviewResponse or None."""
+        status = self.get_provider_status()
+        if status["status"] != ProviderStatus.READY.value:
+            # Fallback gracefully without fabricating external AI calls
+            return None
+
+        # Build evidence grounding context
+        evidence_context = "\n".join([
+            f"- [{r.source_id}] ({r.source_title}): {r.text}"
+            for r in retrieved_evidence
+        ]) or "No specific evidence sources matched."
+
+        prompt = f"""You are BrandGraph AI, an expert brand governance analyzer.
+Evaluate the following draft content for:
+1. Tone and voice alignment (Brand voice is: Professional, measured, transparent, non-hyperbolic).
+2. Potentially unsupported promotional claims or messaging inconsistencies.
+3. Suggest clear, respectful rewrites where applicable.
+
+RULES:
+- Reference ONLY real source IDs present in the provided evidence ({', '.join([r.source_id for r in retrieved_evidence]) or 'None'}).
+- If a claim has no evidence in the provided sources, mark evidence_status as 'Needs verification'.
+- Never declare a claim false unless the approved evidence directly contradicts it.
+- Return ONLY valid JSON adhering strictly to the schema.
+
+APPROVED EVIDENCE:
+{evidence_context}
+
+DRAFT CONTENT:
+\"\"\"{content}\"\"\"
+
+JSON SCHEMA TO RETURN:
+{{
+  "tone_and_voice_assessment": "Summary of tone alignment",
+  "findings": [
+    {{
+      "category": "tone_voice" | "unsupported_claim" | "policy_violation",
+      "matched_text": "quoted snippet from draft",
+      "explanation": "why this needs attention",
+      "suggested_action": "recommended step",
+      "suggested_rewrite": "optional improved wording",
+      "evidence_source_id": "SRC-xxx or null",
+      "evidence_status": "supported" | "contradicted" | "Needs verification",
+      "confidence_score": 0.85
+    }}
+  ],
+  "overall_recommendation": "Final editorial recommendation"
+}}
+"""
+
+        try:
+            if self.provider == "openai":
+                return self._call_openai(prompt)
+            elif self.provider == "gemini":
+                return self._call_gemini(prompt)
+            else:
+                return None
+        except Exception:
+            # Safe error handling: never crash the app on network/API failure
+            return None
+
+    def _call_openai(self, prompt: str) -> Optional[AIReviewResponse]:
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model_name,
+            "messages": [
+                {"role": "system", "content": "You are a brand governance engine that outputs structured JSON."},
+                {"role": "user", "content": prompt},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+        }
+        res = requests.post(url, headers=headers, json=payload, timeout=self.timeout)
+        if res.status_code == 200:
+            data = res.json()
+            raw_json = data["choices"][0]["message"]["content"]
+            parsed = json.loads(raw_json)
+            return AIReviewResponse.model_validate(parsed)
+        return None
+
+    def _call_gemini(self, prompt: str) -> Optional[AIReviewResponse]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"response_mime_type": "application/json"},
+        }
+        res = requests.post(url, json=payload, timeout=self.timeout)
+        if res.status_code == 200:
+            data = res.json()
+            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            parsed = json.loads(raw_text)
+            return AIReviewResponse.model_validate(parsed)
+        return None
+
+    def convert_ai_findings_to_findings(
+        self,
+        ai_response: AIReviewResponse,
+    ) -> List[Finding]:
+        """Converts validated AIReviewFinding objects into the unified Finding model."""
+        unified: List[Finding] = []
+        for idx, af in enumerate(ai_response.findings):
+            unified.append(
+                Finding(
+                    id=f"FIND-AI-{idx+1:03d}",
+                    category=af.category,
+                    matched_text=af.matched_text,
+                    rule_id=None,
+                    rule_description="AI-Assisted Tone & Consistency Analysis",
+                    severity=Severity.MEDIUM,
+                    explanation=af.explanation,
+                    suggested_action=af.suggested_action,
+                    suggested_rewrite=af.suggested_rewrite,
+                    evidence_source_id=af.evidence_source_id,
+                    evidence_status=af.evidence_status,
+                    is_ai_assisted=True,
+                )
+            )
+        return unified
