@@ -169,7 +169,7 @@ const knowledgeView = {
       if (s && t) {
         edgesHtml += `
           <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" 
-                stroke="rgba(255, 255, 255, 0.12)" stroke-width="1.5" stroke-dasharray="2 2" />
+                stroke="rgba(148, 163, 184, 0.22)" stroke-width="1.5" />
         `;
       }
     });

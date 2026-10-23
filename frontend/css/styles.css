@@ -599,7 +599,8 @@ body {
 
 .finding-suggestion {
   background: rgba(16, 185, 129, 0.08);
-  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-left: 3px solid var(--accent-emerald);
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   font-size: 0.8125rem;

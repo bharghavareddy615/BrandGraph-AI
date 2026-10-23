@@ -78,8 +78,10 @@ const reviewView = {
           <div class="editor-header">
             <div style="flex: 1; margin-right: 12px;">
               <input type="text" id="draftTitle" value="${escapeHtml(draft.title)}" 
-                     style="background: transparent; border: none; font-size: 1.15rem; font-weight: 700; color: var(--text-main); outline: none; width: 100%; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px;"
-                     placeholder="Enter Draft Title...">
+                     style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 1.05rem; font-weight: 700; color: var(--text-main); outline: none; width: 100%; padding: 8px 12px; transition: border-color 0.15s ease;"
+                     placeholder="Enter Draft Title..."
+                     onfocus="this.style.borderColor='var(--accent-primary)'"
+                     onblur="this.style.borderColor='var(--border-color)'">
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
                 Product: <strong style="color: var(--accent-cyan);">Inkloom Copilot</strong> &bull; Author: ${draft.author}
                 ${draft.id ? `&bull; Draft ID: <span style="font-family: var(--font-mono);">${draft.id}</span>` : ''}
