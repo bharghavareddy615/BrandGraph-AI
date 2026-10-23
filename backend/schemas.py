@@ -1,7 +1,7 @@
 """Pydantic schemas and domain models for BrandGraph AI."""
 
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
@@ -194,8 +194,8 @@ class ContentDraft(BaseModel):
     current_state: ReviewState = ReviewState.DRAFT
     findings: List[Finding] = Field(default_factory=list)
     version: int = 1
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ReviewComment(BaseModel):
@@ -204,7 +204,7 @@ class ReviewComment(BaseModel):
     author: str
     comment_text: str
     finding_id: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ReviewDecision(BaseModel):
@@ -214,7 +214,7 @@ class ReviewDecision(BaseModel):
     from_state: ReviewState
     to_state: ReviewState
     decision_notes: str = ""
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class SearchResult(BaseModel):
@@ -302,7 +302,7 @@ class EvaluationSuiteSummary(BaseModel):
     false_negatives: int
     accuracy_percentage: float
     execution_time_seconds: float
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     results: List[TestExecutionResult] = Field(default_factory=list)
 
 

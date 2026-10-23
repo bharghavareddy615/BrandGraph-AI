@@ -1,6 +1,6 @@
 """Core Review Service orchestrating Deterministic Checks, RAG, Graph Traversal, and Persistence."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 from typing import Dict, List, Optional
 import uuid
@@ -101,8 +101,8 @@ class ReviewService:
             current_state=initial_state,
             findings=all_findings,
             version=version,
-            created_at=existing.created_at if existing else datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=existing.created_at if existing else datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
 
         # 6. Persist to SQLite
@@ -150,7 +150,7 @@ class ReviewService:
                 f.dismissed = True
                 f.dismissed_reason = f"Applied suggested correction: '{f.suggested_rewrite}'"
                 draft.version += 1
-                draft.updated_at = datetime.utcnow()
+                draft.updated_at = datetime.now(timezone.utc)
                 self.db.save_draft(draft)
                 return draft
         return draft

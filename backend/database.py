@@ -1,6 +1,6 @@
 """SQLite database persistence layer for BrandGraph AI."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
@@ -237,13 +237,13 @@ class DatabaseManager:
                 return False
 
             old_state = ReviewState(row["current_state"])
-            now_iso = datetime.utcnow().isoformat()
+            now_iso = datetime.now(timezone.utc).isoformat()
 
             cursor.execute("""
             UPDATE drafts SET current_state = ?, updated_at = ? WHERE id = ?;
             """, (new_state.value, now_iso, draft_id))
 
-            decision_id = f"DEC-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{draft_id[:6]}"
+            decision_id = f"DEC-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{draft_id[:6]}"
             cursor.execute("""
             INSERT INTO review_decisions (
                 id, draft_id, reviewer, from_state, to_state, decision_notes, timestamp
@@ -323,7 +323,7 @@ class DatabaseManager:
     # -------------------------------------------------------------------------
 
     def save_evaluation_run(self, summary: EvaluationSuiteSummary) -> str:
-        run_id = f"EVAL-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        run_id = f"EVAL-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""

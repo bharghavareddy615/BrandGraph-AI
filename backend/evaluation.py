@@ -1,6 +1,6 @@
 """Brand Stress Tester & Synthetic Evaluation Suite for BrandGraph AI."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 from typing import List, Optional
 
@@ -268,7 +268,7 @@ class EvaluationRunner:
             false_negatives=false_negatives,
             accuracy_percentage=accuracy,
             execution_time_seconds=exec_time,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(timezone.utc),
             results=results,
         )
 
