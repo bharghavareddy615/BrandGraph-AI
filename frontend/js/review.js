@@ -109,6 +109,7 @@ const reviewView = {
               <button class="pill-preset" onclick="reviewView.loadPreset('violations')">⚠️ Multiple Violations</button>
               <button class="pill-preset" onclick="reviewView.loadPreset('disclaimer')">⏱️ Missing Disclaimer</button>
               <button class="pill-preset" onclick="reviewView.loadPreset('contradiction')">❌ Contradicted Claim</button>
+              <button class="pill-preset" onclick="reviewView.loadPreset('unsupported')">🔍 Unsupported Claim</button>
               <button class="pill-preset" onclick="reviewView.loadPreset('compliant')">✅ 100% Compliant</button>
             </div>
           </div>
@@ -124,6 +125,9 @@ const reviewView = {
             </div>
             <div style="display: flex; gap: 8px;">
               <button class="btn btn-secondary" onclick="reviewView.clearEditor()">Clear</button>
+              <button class="btn btn-secondary" id="btnSubmitWorkflow" onclick="reviewView.submitToWorkflow()" style="${draft.id ? '' : 'display: none;'}">
+                <span>Submit to Workflow &rarr;</span>
+              </button>
               <button class="btn btn-primary" id="btnRunReview" onclick="reviewView.submitReview()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 <span>Check Brand Compliance</span>
@@ -313,6 +317,9 @@ const reviewView = {
     } else if (type === 'contradiction') {
       title = 'Accuracy & Verification Guarantee';
       content = 'Inkloom Sentinel guarantees zero false alarms and complete elimination of false positives for all enterprise deployments.';
+    } else if (type === 'unsupported') {
+      title = 'Cognitive Impact Benchmark Study';
+      content = 'Inkloom Sentinel increases developer cognitive IQ by 47 points within two weeks of deployment.';
     } else if (type === 'compliant') {
       title = 'Enterprise Governance Announcement';
       content = 'Inkloom Copilot provides human-in-the-loop governance for enterprise AI workflows. Performance figures depend on workload characteristics, configuration, and cluster capacity. Individual outcomes may vary.';
@@ -444,6 +451,10 @@ const reviewView = {
         findingsList.innerHTML = this.renderFindingsList(draft.findings, draft.id);
       }
 
+      // Show workflow submit button
+      const btnWf = document.getElementById('btnSubmitWorkflow');
+      if (btnWf) btnWf.style.display = 'inline-flex';
+
       app.showToast(`Review complete: ${draft.findings.length} findings detected`, draft.findings.length > 0 ? 'warning' : 'success');
     } catch (err) {
       app.showToast(err.message, 'error');
@@ -455,6 +466,24 @@ const reviewView = {
           <span>Check Brand Compliance</span>
         `;
       }
+    }
+  },
+
+  async submitToWorkflow() {
+    if (!this.currentDraft || !this.currentDraft.id) {
+      app.showToast('Please check brand compliance first to generate a draft record.', 'warning');
+      return;
+    }
+    try {
+      await api.updateStatus(this.currentDraft.id, {
+        new_state: 'Submitted for Review',
+        reviewer: 'Content Creator',
+        decision_notes: 'Draft submitted from Content Review Studio.',
+      });
+      app.showToast('Draft submitted to Human Review queue!', 'success');
+      app.navigateTo('workflow', this.currentDraft.id);
+    } catch (e) {
+      app.showToast(e.message, 'error');
     }
   },
 

@@ -142,13 +142,29 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
         ` : `
           <div style="display: flex; flex-direction: column; gap: 8px;">
             ${draft.findings.map(f => `
-              <div style="background: #0B0F19; border: 1px solid var(--border-color); padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.8125rem; display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                  <span class="badge badge-${f.severity}">${f.severity}</span>
-                  <span style="font-weight: 600; margin-left: 6px;">${escapeHtml(f.matched_text)}</span>
-                  <span style="color: var(--text-muted); margin-left: 8px;">&bull; ${escapeHtml(f.explanation)}</span>
+              <div style="background: #0B0F19; border: 1px solid var(--border-color); padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.8125rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge badge-${f.severity}">${f.severity}</span>
+                    <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">${f.category.replace('_', ' ')}</span>
+                    ${f.rule_id ? `<span style="background: rgba(139, 92, 246, 0.15); color: var(--accent-primary); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${f.rule_id}</span>` : ''}
+                    ${f.evidence_source_id ? `<span style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${f.evidence_source_id}</span>` : ''}
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge ${f.evidence_status === 'Needs verification' ? 'badge-high' : 'badge-low'}" style="font-size: 0.68rem;">
+                      ${f.evidence_status || 'not_applicable'}
+                    </span>
+                    <span style="font-size: 0.72rem; color: var(--text-subtle); font-family: var(--font-mono);">${f.id}</span>
+                  </div>
                 </div>
-                <span style="font-size: 0.72rem; color: var(--text-subtle); font-family: var(--font-mono);">${f.id}</span>
+                <div style="color: var(--text-main); margin-bottom: 4px;">
+                  <strong style="color: var(--accent-amber);">"${escapeHtml(f.matched_text)}"</strong> &bull; ${escapeHtml(f.explanation)}
+                </div>
+                ${f.suggested_rewrite ? `
+                  <div style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.08); padding: 6px 10px; border-radius: 4px; margin-top: 6px;">
+                    <strong>Approved Alternative:</strong> "${escapeHtml(f.suggested_rewrite)}"
+                  </div>
+                ` : ''}
               </div>
             `).join('')}
           </div>

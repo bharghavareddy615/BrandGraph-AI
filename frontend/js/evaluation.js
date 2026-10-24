@@ -90,12 +90,13 @@ const evaluationView = {
         <table class="data-table">
           <thead>
             <tr>
-              <th style="width: 100px;">Test ID</th>
-              <th style="width: 180px;">Scenario Name</th>
+              <th style="width: 80px;">Test ID</th>
+              <th style="width: 170px;">Scenario Name</th>
               <th>Input Content Excerpt</th>
               <th>Expected vs Actual</th>
-              <th style="width: 100px;">Status</th>
+              <th style="width: 90px;">Status</th>
               <th>Evaluation Details</th>
+              <th style="width: 100px;">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -105,7 +106,7 @@ const evaluationView = {
                 <td>
                   <strong>${escapeHtml(r.name)}</strong>
                 </td>
-                <td style="font-size: 0.78rem; color: var(--text-muted); max-width: 280px; font-style: italic;">
+                <td style="font-size: 0.78rem; color: var(--text-muted); max-width: 250px; font-style: italic;">
                   ${this.getTestCaseInputPreview(r.test_id)}
                 </td>
                 <td style="font-size: 0.75rem;">
@@ -120,6 +121,11 @@ const evaluationView = {
                 <td style="font-size: 0.75rem; color: var(--text-muted);">
                   ${escapeHtml(r.details || '')}
                   ${r.error_message ? `<div style="color: var(--accent-rose);">${escapeHtml(r.error_message)}</div>` : ''}
+                </td>
+                <td>
+                  <button class="btn btn-secondary btn-sm" onclick="evaluationView.testInStudio('${r.test_id}')">
+                    Inspect &rarr;
+                  </button>
                 </td>
               </tr>
             `).join('')}
@@ -168,5 +174,63 @@ const evaluationView = {
       'STRESS-10': '"Inkloom Bot claims to be 100% bug-free with instantaneous execution (Offline test)"',
     };
     return map[testId] || 'Synthetic prompt input';
+  },
+
+  testInStudio(testId) {
+    const inputs = {
+      'STRESS-01': {
+        title: 'STRESS-01: Prohibited Phrase Test',
+        content: 'Our platform is guaranteed to be 100% bug-free and completely hack-proof across all environments.',
+      },
+      'STRESS-02': {
+        title: 'STRESS-02: Unapproved Product Alias',
+        content: 'Get started today with Inkloom Bot to automate your team\'s compliance review workflows.',
+      },
+      'STRESS-03': {
+        title: 'STRESS-03: Missing Mandatory Disclaimer',
+        content: 'Inkloom Sentinel scans enterprise code with under 45ms latency and ultra-fast throughput.',
+      },
+      'STRESS-04': {
+        title: 'STRESS-04: Fully Compliant Content',
+        content: 'Inkloom Copilot provides human-in-the-loop governance for enterprise AI workflows. Performance figures depend on workload characteristics, configuration, and cluster capacity. Individual outcomes may vary.',
+      },
+      'STRESS-05': {
+        title: 'STRESS-05: Supported Claim by Synthetic Evidence',
+        content: 'Inkloom Cloud encrypts data using TLS 1.3 in transit and AES-256 at rest across all tiers.',
+      },
+      'STRESS-06': {
+        title: 'STRESS-06: Claim Contradicted by Synthetic Evidence',
+        content: 'Inkloom Sentinel guarantees zero false alarms and complete elimination of false positives.',
+      },
+      'STRESS-07': {
+        title: 'STRESS-07: Unsupported Claim (Needs Verification)',
+        content: 'Inkloom Sentinel increases developer cognitive IQ by 47 points within two weeks of deployment.',
+      },
+      'STRESS-08': {
+        title: 'STRESS-08: Conflicting & Superseded Rules',
+        content: 'Deploy the Inkloom Suite for marketing, or switch to Inkloom Assistant for legacy support.',
+      },
+      'STRESS-09': {
+        title: 'STRESS-09: Empty Content Handling',
+        content: '   ',
+      },
+      'STRESS-10': {
+        title: 'STRESS-10: Offline / Local Resilience',
+        content: 'Inkloom Bot claims to be 100% bug-free with instantaneous execution.',
+      },
+    };
+    const tc = inputs[testId];
+    if (tc) {
+      reviewView.currentDraft = {
+        id: null,
+        title: tc.title,
+        author: 'Stress Suite Tester',
+        product_id: 'PROD-COPILOT',
+        content: tc.content,
+        findings: [],
+      };
+      app.navigateTo('review');
+      setTimeout(() => reviewView.submitReview(), 150);
+    }
   },
 };

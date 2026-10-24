@@ -152,6 +152,7 @@ const dashboardView = {
       { key: 'unapproved_name', label: 'Unapproved Product Names', color: 'var(--accent-amber)' },
       { key: 'missing_disclaimer', label: 'Missing Mandatory Disclaimers', color: 'var(--accent-blue)' },
       { key: 'contradicted_claim', label: 'Contradicted Factual Claims', color: '#EC4899' },
+      { key: 'unsupported_claim', label: 'Unsupported Claims (Needs Verification)', color: '#F59E0B' },
       { key: 'tone_voice', label: 'Tone & Voice Deviations', color: 'var(--accent-primary)' },
       { key: 'rule_conflict', label: 'Rule Conflicts & Superseded', color: '#EAB308' },
     ];

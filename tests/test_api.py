@@ -106,3 +106,30 @@ def test_settings_endpoint():
     assert "ai_provider_status" in settings
     assert "privacy_policy" in settings
     assert "synthetic_data_notice" in settings
+
+
+def test_evidence_search_endpoint():
+    # 1. Grounded query
+    res = client.get("/api/evidence/search?q=TLS%201.3%20AES-256")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["evidence_status"] == "supported"
+    assert len(data["results"]) >= 1
+    assert data["results"][0]["source_id"] == "SRC-003"
+
+    # 2. Ungrounded query -> Needs verification
+    res_unsub = client.get("/api/evidence/search?q=increases%20developer%20cognitive%20IQ%20by%2047%20points")
+    assert res_unsub.status_code == 200
+    data_unsub = res_unsub.json()
+    assert data_unsub["evidence_status"] == "Needs verification"
+    assert len(data_unsub["results"]) == 0
+
+
+def test_brand_graph_product_filter():
+    res = client.get("/api/brand/graph?product_id=PROD-COPILOT")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["node_count"] > 0
+    node_ids = [n["id"] for n in data["nodes"]]
+    assert "PROD-COPILOT" in node_ids
+

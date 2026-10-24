@@ -190,10 +190,21 @@ class BrandGraphStore:
                     conflicting.append(data)
         return {"superseded": superseded, "conflicting": conflicting}
 
-    def get_graph_data(self) -> Dict[str, Any]:
+    def get_graph_data(self, product_id: Optional[str] = None) -> Dict[str, Any]:
         """Exports graph nodes and edges with coordinates and colors for frontend visualizer."""
+        target_graph = self.graph
+        if product_id and product_id != "ALL" and self.graph.has_node(product_id):
+            sub_nodes = {product_id, "BRAND-INKLOOM"}
+            for neighbor in self.graph.neighbors(product_id):
+                sub_nodes.add(neighbor)
+                for n2 in self.graph.neighbors(neighbor):
+                    sub_nodes.add(n2)
+            for pred in self.graph.predecessors(product_id):
+                sub_nodes.add(pred)
+            target_graph = self.graph.subgraph(sub_nodes)
+
         # Calculate spring layout positions normalized to a canvas
-        pos = nx.spring_layout(self.graph, seed=42, k=0.9, iterations=50)
+        pos = nx.spring_layout(target_graph, seed=42, k=0.9, iterations=50)
 
         color_map = {
             NodeType.BRAND.value: "#8B5CF6",           # Violet
@@ -210,7 +221,7 @@ class BrandGraphStore:
         }
 
         nodes = []
-        for node_id, d in self.graph.nodes(data=True):
+        for node_id, d in target_graph.nodes(data=True):
             x, y = pos.get(node_id, (0, 0))
             ntype = d.get("node_type", "Unknown")
             nodes.append({
@@ -224,7 +235,7 @@ class BrandGraphStore:
             })
 
         edges = []
-        for u, v, k, d in self.graph.edges(keys=True, data=True):
+        for u, v, k, d in target_graph.edges(keys=True, data=True):
             edges.append({
                 "source": u,
                 "target": v,

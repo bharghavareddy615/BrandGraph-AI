@@ -60,6 +60,7 @@ const api = {
   getDashboard: () => api.get('/api/dashboard'),
   getBrandKnowledge: () => api.get('/api/brand/rules'),
   getBrandGraph: (productId) => api.get(`/api/brand/graph${productId ? `?product_id=${productId}` : ''}`),
+  searchEvidence: (query) => api.get(`/api/evidence/search?q=${encodeURIComponent(query)}`),
   reviewContent: (payload) => api.post('/api/review', payload),
   listDrafts: () => api.get('/api/drafts'),
   getDraft: (id) => api.get(`/api/drafts/${id}`),

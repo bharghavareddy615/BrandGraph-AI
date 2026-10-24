@@ -116,23 +116,38 @@ const app = {
 
       container.innerHTML = `
         <div class="card" style="margin-bottom: 24px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px;">
             <div>
-              <h3 style="font-size: 1rem; font-weight: 700;">Approved Evidence Repository</h3>
+              <h3 style="font-size: 1rem; font-weight: 700;">Approved Evidence Repository &amp; RAG Explorer</h3>
               <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
-                Verified technical whitepapers, performance benchmarks, and compliance summaries.
+                Verified technical whitepapers, performance benchmarks, and compliance audit summaries.
               </p>
             </div>
-            <input type="text" id="evidenceSearchInput" placeholder="Search evidence (e.g. 45ms, TLS, false positives)..."
-                   style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; color: var(--text-main); font-size: 0.8125rem; width: 320px; outline: none;">
+            <div style="position: relative; width: 360px;">
+              <input type="text" id="evidenceSearchInput" placeholder="Query evidence retrieval (e.g. 45ms, TLS, cognitive IQ)..."
+                     style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; color: var(--text-main); font-size: 0.8125rem; width: 100%; outline: none;">
+            </div>
+          </div>
+
+          <!-- Quick Query Chips -->
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 0.72rem; color: var(--text-subtle); text-transform: uppercase;">Quick RAG Queries:</span>
+            <button class="pill-preset" onclick="app.runEvidenceSearch('under 45ms latency benchmark report')">⚡ 45ms Latency</button>
+            <button class="pill-preset" onclick="app.runEvidenceSearch('TLS 1.3 AES-256 encryption at rest')">🔒 TLS 1.3 Encryption</button>
+            <button class="pill-preset" onclick="app.runEvidenceSearch('reduced false positives by 42% in enterprise trials')">🎯 42% False Positives</button>
+            <button class="pill-preset" onclick="app.runEvidenceSearch('increases developer cognitive IQ by 47 points')">⚠️ Unverified IQ Claim</button>
+            <button class="pill-preset" onclick="app.resetEvidenceExplorer()">↺ Show All Sources</button>
           </div>
         </div>
+
+        <!-- Live RAG Status Banner (Hidden until query) -->
+        <div id="ragStatusBanner" style="display: none; margin-bottom: 20px;"></div>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;" id="evidenceCardsGrid">
           ${sources.map(s => {
             const linked = claims.filter(c => c.evidence_source_id === s.id);
             return `
-              <div class="card evidence-card" data-title="${escapeHtml(s.title.toLowerCase())}" data-excerpt="${escapeHtml(s.excerpt.toLowerCase())}">
+              <div class="card evidence-card">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
                   <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); font-size: 0.8125rem;">${s.id}</span>
                   <span class="badge badge-low">${escapeHtml(s.source_type)}</span>
@@ -158,25 +173,105 @@ const app = {
         </div>
       `;
 
-      // Search filter handler
+      // Live search input listener with debounce
+      let searchTimeout = null;
       const searchInput = document.getElementById('evidenceSearchInput');
       if (searchInput) {
         searchInput.addEventListener('input', () => {
-          const q = searchInput.value.toLowerCase().trim();
-          document.querySelectorAll('.evidence-card').forEach(card => {
-            const title = card.getAttribute('data-title') || '';
-            const excerpt = card.getAttribute('data-excerpt') || '';
-            if (!q || title.includes(q) || excerpt.includes(q)) {
-              card.style.display = 'block';
-            } else {
-              card.style.display = 'none';
-            }
-          });
+          clearTimeout(searchTimeout);
+          const q = searchInput.value.trim();
+          if (!q) {
+            app.resetEvidenceExplorer();
+            return;
+          }
+          searchTimeout = setTimeout(() => {
+            app.runEvidenceSearch(q);
+          }, 300);
         });
       }
     } catch (e) {
       container.innerHTML = `<div class="card" style="border-color: var(--accent-rose);">${e.message}</div>`;
     }
+  },
+
+  async runEvidenceSearch(query) {
+    const input = document.getElementById('evidenceSearchInput');
+    if (input) input.value = query;
+
+    const banner = document.getElementById('ragStatusBanner');
+    const grid = document.getElementById('evidenceCardsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <div class="loading-state" style="grid-column: 1 / -1;">
+        <div class="spinner"></div>
+        <p>Querying backend evidence retriever for "${escapeHtml(query)}"...</p>
+      </div>
+    `;
+
+    try {
+      const resp = await api.searchEvidence(query);
+      const results = resp.results || [];
+      const status = resp.evidence_status;
+
+      if (banner) {
+        banner.style.display = 'block';
+        banner.innerHTML = `
+          <div style="background: ${status === 'Supported' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'}; border: 1px solid ${status === 'Supported' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}; border-radius: var(--radius-sm); padding: 12px 18px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: ${status === 'Supported' ? 'var(--accent-emerald)' : 'var(--accent-amber)'};">
+                Evidence Status: ${status}
+              </span>
+              <div style="font-size: 0.8125rem; color: var(--text-main); margin-top: 2px;">
+                ${results.length > 0 ? `Matched ${results.length} approved document chunk(s) via token-weighted retrieval.` : `No approved sources verify this assertion. Labelled <strong>"Needs verification"</strong>.`}
+              </div>
+            </div>
+            <span class="badge ${status === 'Supported' ? 'badge-state-approved' : 'badge-high'}">${status}</span>
+          </div>
+        `;
+      }
+
+      if (results.length === 0) {
+        grid.innerHTML = `
+          <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
+            <div style="font-size: 2rem; margin-bottom: 8px;">🔍</div>
+            <h4 style="font-size: 1rem; font-weight: 700;">No Approved Evidence Matches</h4>
+            <p style="font-size: 0.8125rem; color: var(--text-muted); max-width: 440px; margin: 8px auto 0 auto;">
+              No approved synthetic evidence sources substantiate "<strong>${escapeHtml(query)}</strong>".
+              In BrandGraph AI, ungrounded claims are strictly categorized as <em>"Needs verification"</em> rather than presumed true.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = results.map(r => `
+        <div class="card" style="border-left: 3px solid var(--accent-cyan);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); font-size: 0.8125rem;">${r.source_id} &bull; ${r.chunk_id}</span>
+            <span class="badge badge-state-approved">Relevance: ${Math.round(r.score * 100)}%</span>
+          </div>
+          <h4 style="font-size: 0.9375rem; font-weight: 700; margin-bottom: 4px;">${escapeHtml(r.source_title)}</h4>
+          <div style="font-size: 0.72rem; color: var(--text-subtle); margin-bottom: 10px;">
+            Section: ${escapeHtml(r.section || 'Findings')} &bull; Provenance: ${escapeHtml(r.provenance || 'Official Audit')}
+          </div>
+          <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5;">
+            "${escapeHtml(r.text)}"
+          </div>
+        </div>
+      `).join('');
+
+    } catch (e) {
+      grid.innerHTML = `<div class="card" style="grid-column: 1 / -1; border-color: var(--accent-rose);">${e.message}</div>`;
+    }
+  },
+
+  resetEvidenceExplorer() {
+    const input = document.getElementById('evidenceSearchInput');
+    if (input) input.value = '';
+    const banner = document.getElementById('ragStatusBanner');
+    if (banner) banner.style.display = 'none';
+    this.renderEvidenceExplorer(document.getElementById('pageContainer'));
   },
 
   async renderSettings(container) {

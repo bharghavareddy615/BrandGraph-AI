@@ -102,7 +102,19 @@ def get_brand_knowledge() -> Dict[str, Any]:
 @app.get("/api/brand/graph", tags=["Brand Knowledge"])
 def get_brand_graph(product_id: Optional[str] = None) -> Dict[str, Any]:
     """Returns interactive graph visualization data (nodes, coordinates, colors, edges)."""
-    return graph_store.get_graph_data()
+    return graph_store.get_graph_data(product_id=product_id)
+
+
+@app.get("/api/evidence/search", tags=["Evidence Explorer"])
+def search_evidence(q: str = Query(..., min_length=1), top_k: int = 5) -> Dict[str, Any]:
+    """Queries the backend evidence retriever and returns grounded matches with relevance scores."""
+    context = review_service.retriever.retrieve_with_context(q, top_k=top_k)
+    return {
+        "query": q,
+        "evidence_status": context["evidence_status"].value,
+        "results": [r.model_dump() for r in context["results"]],
+        "linked_claims": context["linked_claims"],
+    }
 
 
 @app.post("/api/review", tags=["Content Review"])

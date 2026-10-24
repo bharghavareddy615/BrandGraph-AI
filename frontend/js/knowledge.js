@@ -106,12 +106,21 @@ const knowledgeView = {
 
     container.innerHTML = `
       <div class="card" style="padding: 0; overflow: hidden;">
-        <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2);">
-          <div>
-            <strong style="font-size: 0.9375rem;">Connected Brand Knowledge Graph</strong>
-            <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 8px;">
-              Nodes: ${g.node_count} &bull; Directed Edges: ${g.edge_count}
-            </span>
+        <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div>
+              <strong style="font-size: 0.9375rem;">Connected Brand Knowledge Graph</strong>
+              <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 8px;" id="graphNodeCounter">
+                Nodes: ${g.node_count} &bull; Directed Edges: ${g.edge_count}
+              </span>
+            </div>
+            <select id="graphProductFilter" onchange="knowledgeView.filterByProduct(this.value)"
+                    style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); font-size: 0.75rem; padding: 4px 10px; outline: none; cursor: pointer;">
+              <option value="ALL">All Graph Entities</option>
+              <option value="PROD-COPILOT">Inkloom Copilot Subgraph</option>
+              <option value="PROD-SENTINEL">Inkloom Sentinel Subgraph</option>
+              <option value="PROD-CORE">Knowledge Core Subgraph</option>
+            </select>
           </div>
           <div style="font-size: 0.75rem; color: var(--text-subtle);">
             Click on any node to view entity details and connections.
@@ -135,6 +144,8 @@ const knowledgeView = {
             <div class="legend-item"><div class="legend-color" style="background: #F59E0B;"></div> Prohibited Term</div>
             <div class="legend-item"><div class="legend-color" style="background: #3B82F6;"></div> Evidence Source</div>
             <div class="legend-item"><div class="legend-color" style="background: #EC4899;"></div> Disclaimer</div>
+            <div class="legend-item"><div class="legend-color" style="background: #94A3B8;"></div> Draft Node</div>
+            <div class="legend-item"><div class="legend-color" style="background: #F43F5E;"></div> Finding Node</div>
           </div>
         </div>
 
@@ -150,6 +161,20 @@ const knowledgeView = {
     `;
 
     this.drawSvgGraph(g);
+  },
+
+  async filterByProduct(productId) {
+    try {
+      const g = await api.getBrandGraph(productId === 'ALL' ? null : productId);
+      this.graphData = g;
+      const counterEl = document.getElementById('graphNodeCounter');
+      if (counterEl) {
+        counterEl.innerText = `Nodes: ${g.node_count} • Directed Edges: ${g.edge_count}`;
+      }
+      this.drawSvgGraph(g);
+    } catch (e) {
+      app.showToast('Could not filter graph: ' + e.message, 'error');
+    }
   },
 
   drawSvgGraph(g) {
