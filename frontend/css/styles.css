@@ -938,3 +938,307 @@ body {
   text-transform: uppercase;
 }
 
+/* --------------------------------------------------------------------------
+   Knowledge Graph Visualizer & Zoom Controls
+   -------------------------------------------------------------------------- */
+.graph-container {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background: radial-gradient(circle at 50% 50%, #0F172A 0%, #07090E 100%);
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.05) 0%, transparent 70%),
+    radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+}
+
+.graph-svg {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  transition: transform 0.05s ease-out;
+}
+
+.graph-svg:active {
+  cursor: grabbing;
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 6px;
+  background: rgba(17, 24, 39, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  z-index: 10;
+  box-shadow: var(--shadow-md);
+}
+
+.graph-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.graph-btn:hover {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: var(--accent-primary);
+  color: #FFFFFF;
+}
+
+.graph-legend {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  gap: 12px;
+  background: rgba(11, 15, 25, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+}
+
+.graph-node circle {
+  transition: r 0.2s ease, stroke-width 0.2s ease, filter 0.2s ease;
+}
+
+.graph-node:hover circle {
+  r: 18;
+  stroke: #FFFFFF;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8));
+}
+
+.graph-node:hover text {
+  fill: #FFFFFF;
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   Source & Rule Navigation Clickable Badges
+   -------------------------------------------------------------------------- */
+.badge-clickable {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.badge-source-link {
+  background: rgba(6, 182, 212, 0.12) !important;
+  color: var(--accent-cyan) !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+}
+
+.badge-source-link:hover {
+  background: rgba(6, 182, 212, 0.25) !important;
+  border-color: var(--accent-cyan) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+.badge-rule-link {
+  background: rgba(139, 92, 246, 0.12) !important;
+  color: #DDD6FE !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+}
+
+.badge-rule-link:hover {
+  background: rgba(139, 92, 246, 0.25) !important;
+  border-color: var(--accent-primary) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   Universal Inspector Modal & Slide Drawer
+   -------------------------------------------------------------------------- */
+.inspector-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.inspector-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  width: 90%;
+  max-width: 680px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-md), 0 0 30px rgba(139, 92, 246, 0.2);
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.inspector-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.inspector-body {
+  padding: 20px;
+  overflow-y: auto;
+  font-size: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inspector-footer {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   Workflow Filter Pills
+   -------------------------------------------------------------------------- */
+.workflow-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filter-pill {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filter-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+.filter-pill.active {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent-primary);
+  color: #DDD6FE;
+}
+
+/* --------------------------------------------------------------------------
+   Polished Empty States
+   -------------------------------------------------------------------------- */
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 14px;
+  color: var(--text-subtle);
+}
+
+.empty-state-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.empty-state-desc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  max-width: 420px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+

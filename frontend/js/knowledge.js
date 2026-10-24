@@ -97,6 +97,13 @@ const knowledgeView = {
     }
   },
 
+  zoomLevel: 1.0,
+  panX: 0,
+  panY: 0,
+  isPanning: false,
+  startX: 0,
+  startY: 0,
+
   renderGraphTab(container) {
     const g = this.graphData;
     if (!g || !g.nodes) {
@@ -123,16 +130,30 @@ const knowledgeView = {
             </select>
           </div>
           <div style="font-size: 0.75rem; color: var(--text-subtle);">
-            Click on any node to view entity details and connections.
+            Drag to pan &bull; Click node for connections &bull; Toolbar for zoom
           </div>
         </div>
 
         <div class="graph-container" id="svgGraphWrapper">
+          <!-- Graph Toolbar -->
+          <div class="graph-toolbar">
+            <button class="graph-btn" onclick="knowledgeView.zoomIn()" title="Zoom In">+</button>
+            <button class="graph-btn" onclick="knowledgeView.zoomOut()" title="Zoom Out">&minus;</button>
+            <button class="graph-btn" onclick="knowledgeView.resetZoom()" title="Reset View">&#x21bb;</button>
+          </div>
+
           <svg class="graph-svg" id="brandGraphSvg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-            <!-- Edges -->
-            <g id="svgEdgesGroup"></g>
-            <!-- Nodes -->
-            <g id="svgNodesGroup"></g>
+            <defs>
+              <marker id="edgeArrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(148, 163, 184, 0.45)"></path>
+              </marker>
+            </defs>
+            <g id="graphViewport" transform="translate(0, 0) scale(1)">
+              <!-- Edges -->
+              <g id="svgEdgesGroup"></g>
+              <!-- Nodes -->
+              <g id="svgNodesGroup"></g>
+            </g>
           </svg>
 
           <!-- Graph Legend -->
@@ -161,6 +182,54 @@ const knowledgeView = {
     `;
 
     this.drawSvgGraph(g);
+    this.bindPanEvents();
+  },
+
+  zoomIn() {
+    this.zoomLevel = Math.min(2.5, this.zoomLevel + 0.2);
+    this.applyTransform();
+  },
+
+  zoomOut() {
+    this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.2);
+    this.applyTransform();
+  },
+
+  resetZoom() {
+    this.zoomLevel = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.applyTransform();
+  },
+
+  applyTransform() {
+    const vp = document.getElementById('graphViewport');
+    if (vp) {
+      vp.setAttribute('transform', `translate(${this.panX}, ${this.panY}) scale(${this.zoomLevel})`);
+    }
+  },
+
+  bindPanEvents() {
+    const svg = document.getElementById('brandGraphSvg');
+    if (!svg) return;
+
+    svg.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.graph-node')) return; // let node clicks pass through
+      this.isPanning = true;
+      this.startX = e.clientX - this.panX;
+      this.startY = e.clientY - this.panY;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.isPanning) return;
+      this.panX = e.clientX - this.startX;
+      this.panY = e.clientY - this.startY;
+      this.applyTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      this.isPanning = false;
+    });
   },
 
   async filterByProduct(productId) {
@@ -171,6 +240,7 @@ const knowledgeView = {
       if (counterEl) {
         counterEl.innerText = `Nodes: ${g.node_count} • Directed Edges: ${g.edge_count}`;
       }
+      this.resetZoom();
       this.drawSvgGraph(g);
     } catch (e) {
       app.showToast('Could not filter graph: ' + e.message, 'error');
@@ -194,7 +264,10 @@ const knowledgeView = {
       if (s && t) {
         edgesHtml += `
           <line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" 
-                stroke="rgba(148, 163, 184, 0.22)" stroke-width="1.5" />
+                stroke="rgba(148, 163, 184, 0.25)" stroke-width="1.75"
+                marker-end="url(#edgeArrow)">
+            <title>${escapeHtml(e.type || 'RELATES_TO')}: ${s.label} &rarr; ${t.label}</title>
+          </line>
         `;
       }
     });
@@ -203,15 +276,15 @@ const knowledgeView = {
     // Render Nodes
     let nodesHtml = '';
     g.nodes.forEach(n => {
-      const radius = n.type === 'Brand' ? 20 : (n.type === 'Product' ? 16 : 12);
+      const radius = n.type === 'Brand' ? 22 : (n.type === 'Product' ? 17 : 13);
       nodesHtml += `
         <g class="graph-node" style="cursor: pointer;" onclick="knowledgeView.showNodeDetail('${n.id}')">
           <circle cx="${n.x}" cy="${n.y}" r="${radius}" fill="${n.color}" stroke="#FFFFFF" stroke-width="2" opacity="0.95">
             <title>${escapeHtml(n.label)} (${n.type})</title>
           </circle>
-          <text x="${n.x}" y="${n.y + radius + 12}" fill="#CBD5E1" font-size="9" font-family="var(--font-sans)" 
-                text-anchor="middle" font-weight="600">
-            ${escapeHtml(n.label.length > 18 ? n.label.slice(0, 16) + '...' : n.label)}
+          <text x="${n.x}" y="${n.y + radius + 13}" fill="#E2E8F0" font-size="10" font-family="var(--font-sans)" 
+                text-anchor="middle" font-weight="700" filter="drop-shadow(0px 1px 3px rgba(0,0,0,0.9))">
+            ${escapeHtml(n.label.length > 20 ? n.label.slice(0, 18) + '...' : n.label)}
           </text>
         </g>
       `;
@@ -279,8 +352,16 @@ const knowledgeView = {
           <tbody>
             ${rules.map(r => `
               <tr>
-                <td style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-primary);">${r.id}</td>
-                <td><strong>${escapeHtml(r.title)}</strong></td>
+                <td>
+                  <span class="badge-clickable badge-rule-link" onclick="app.openRuleDetail('${r.id}')" title="Inspect Rule ${r.id}">
+                    ${r.id}
+                  </span>
+                </td>
+                <td>
+                  <strong style="cursor: pointer; color: var(--text-main);" onclick="app.openRuleDetail('${r.id}')" title="Inspect ${escapeHtml(r.title)}">
+                    ${escapeHtml(r.title)}
+                  </strong>
+                </td>
                 <td><span style="text-transform: uppercase; font-size: 0.7rem; color: var(--text-muted);">${r.category}</span></td>
                 <td><span class="badge badge-${r.severity}">${r.severity}</span></td>
                 <td>
@@ -290,8 +371,8 @@ const knowledgeView = {
                 </td>
                 <td style="color: var(--text-muted); font-size: 0.78rem;">
                   ${escapeHtml(r.description)}
-                  ${r.superseded_by ? `<br><span style="color: var(--accent-rose);">Superseded by: ${r.superseded_by}</span>` : ''}
-                  ${r.conflicts_with ? `<br><span style="color: var(--accent-amber);">Conflicts with: ${r.conflicts_with}</span>` : ''}
+                  ${r.superseded_by ? `<br><span style="color: var(--accent-rose);">Superseded by: <strong>${r.superseded_by}</strong></span>` : ''}
+                  ${r.conflicts_with ? `<br><span style="color: var(--accent-amber);">Conflicts with: <strong>${r.conflicts_with}</strong></span>` : ''}
                 </td>
               </tr>
             `).join('')}
@@ -383,8 +464,16 @@ const knowledgeView = {
             <tbody>
               ${sources.map(s => `
                 <tr>
-                  <td style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">${s.id}</td>
-                  <td><strong>${escapeHtml(s.title)}</strong></td>
+                  <td>
+                    <span class="badge-clickable badge-source-link" onclick="app.openEvidenceSource('${s.id}')" title="Inspect Source ${s.id}">
+                      ${s.id}
+                    </span>
+                  </td>
+                  <td>
+                    <strong style="cursor: pointer; color: var(--text-main);" onclick="app.openEvidenceSource('${s.id}')" title="Inspect ${escapeHtml(s.title)}">
+                      ${escapeHtml(s.title)}
+                    </strong>
+                  </td>
                   <td><span class="badge badge-low">${s.source_type}</span></td>
                   <td>${s.publication_date}</td>
                   <td style="font-size: 0.78rem; color: var(--text-muted); max-width: 320px;">

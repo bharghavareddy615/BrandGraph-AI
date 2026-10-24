@@ -167,6 +167,10 @@ const app = {
                     </ul>
                   </div>
                 ` : ''}
+                <div style="display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                  <button class="btn btn-secondary btn-sm" onclick="app.openEvidenceSource('${s.id}')">Inspect Source &rarr;</button>
+                  <button class="btn btn-secondary btn-sm" onclick="app.runEvidenceSearch('${escapeHtml(s.title)}')">Query in RAG &rarr;</button>
+                </div>
               </div>
             `;
           }).join('')}
@@ -190,7 +194,13 @@ const app = {
         });
       }
     } catch (e) {
-      container.innerHTML = `<div class="card" style="border-color: var(--accent-rose);">${e.message}</div>`;
+      container.innerHTML = `
+        <div class="card" style="border-color: var(--accent-rose); padding: 24px;">
+          <h3 style="color: var(--accent-rose);">Failed to load evidence repository</h3>
+          <p style="color: var(--text-muted); margin-top: 8px;">${e.message}</p>
+          <button class="btn btn-secondary" style="margin-top: 14px;" onclick="app.renderEvidenceExplorer(document.getElementById('pageContainer'))">Retry</button>
+        </div>
+      `;
     }
   },
 
@@ -233,36 +243,48 @@ const app = {
 
       if (results.length === 0) {
         grid.innerHTML = `
-          <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 48px 24px;">
-            <div style="font-size: 2rem; margin-bottom: 8px;">🔍</div>
-            <h4 style="font-size: 1rem; font-weight: 700;">No Approved Evidence Matches</h4>
-            <p style="font-size: 0.8125rem; color: var(--text-muted); max-width: 440px; margin: 8px auto 0 auto;">
+          <div class="card empty-state" style="grid-column: 1 / -1; padding: 48px 24px;">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">No Approved Evidence Matches</div>
+            <div class="empty-state-desc">
               No approved synthetic evidence sources substantiate "<strong>${escapeHtml(query)}</strong>".
               In BrandGraph AI, ungrounded claims are strictly categorized as <em>"Needs verification"</em> rather than presumed true.
-            </p>
+            </div>
+            <button class="btn btn-secondary" onclick="app.resetEvidenceExplorer()">Show All Verified Sources</button>
           </div>
         `;
         return;
       }
 
       grid.innerHTML = results.map(r => `
-        <div class="card" style="border-left: 3px solid var(--accent-cyan);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); font-size: 0.8125rem;">${r.source_id} &bull; ${r.chunk_id}</span>
-            <span class="badge badge-state-approved">Relevance: ${Math.round(r.score * 100)}%</span>
+        <div class="card" style="border-left: 3px solid var(--accent-cyan); display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); font-size: 0.8125rem;">${r.source_id} &bull; ${r.chunk_id}</span>
+              <span class="badge badge-state-approved">Relevance: ${Math.round(r.score * 100)}%</span>
+            </div>
+            <h4 style="font-size: 0.9375rem; font-weight: 700; margin-bottom: 4px;">${escapeHtml(r.source_title)}</h4>
+            <div style="font-size: 0.72rem; color: var(--text-subtle); margin-bottom: 10px;">
+              Section: ${escapeHtml(r.section || 'Findings')} &bull; Provenance: ${escapeHtml(r.provenance || 'Official Audit')}
+            </div>
+            <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
+              "${escapeHtml(r.text)}"
+            </div>
           </div>
-          <h4 style="font-size: 0.9375rem; font-weight: 700; margin-bottom: 4px;">${escapeHtml(r.source_title)}</h4>
-          <div style="font-size: 0.72rem; color: var(--text-subtle); margin-bottom: 10px;">
-            Section: ${escapeHtml(r.section || 'Findings')} &bull; Provenance: ${escapeHtml(r.provenance || 'Official Audit')}
-          </div>
-          <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5;">
-            "${escapeHtml(r.text)}"
+          <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+            <button class="btn btn-secondary btn-sm" onclick="app.openEvidenceSource('${r.source_id}')">Inspect Source Document &rarr;</button>
           </div>
         </div>
       `).join('');
 
     } catch (e) {
-      grid.innerHTML = `<div class="card" style="grid-column: 1 / -1; border-color: var(--accent-rose);">${e.message}</div>`;
+      grid.innerHTML = `
+        <div class="card" style="grid-column: 1 / -1; border-color: var(--accent-rose); padding: 24px;">
+          <h3 style="color: var(--accent-rose);">Search Query Failed</h3>
+          <p style="color: var(--text-muted); margin-top: 8px;">${e.message}</p>
+          <button class="btn btn-secondary" style="margin-top: 14px;" onclick="app.runEvidenceSearch('${escapeHtml(query)}')">Retry Search</button>
+        </div>
+      `;
     }
   },
 
@@ -376,7 +398,176 @@ const app = {
       setTimeout(() => toast.remove(), 300);
     }, 3500);
   },
+
+  // --------------------------------------------------------------------------
+  // Universal Source & Rule Navigation Modals
+  // --------------------------------------------------------------------------
+  cachedKnowledge: null,
+
+  async ensureKnowledgeLoaded() {
+    if (!this.cachedKnowledge) {
+      this.cachedKnowledge = await api.getBrandKnowledge().catch(() => null);
+    }
+    return this.cachedKnowledge;
+  },
+
+  async openEvidenceSource(sourceId) {
+    const k = await this.ensureKnowledgeLoaded();
+    const source = k?.evidence_sources?.find(s => s.id === sourceId);
+    if (!source) {
+      this.showToast(`Evidence source ${sourceId} not found.`, 'warning');
+      return;
+    }
+
+    const linkedClaims = (k?.claims || []).filter(c => c.evidence_source_id === source.id);
+
+    this.showInspectorModal({
+      title: `${source.id}: ${source.title}`,
+      badge: `<span class="badge badge-state-approved">${escapeHtml(source.source_type)}</span>`,
+      bodyHtml: `
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: 0.75rem;">
+          <span style="color: var(--text-subtle);">Published: <strong style="color: var(--text-main);">${source.publication_date}</strong></span>
+          &bull;
+          <span style="color: var(--text-subtle);">Provenance: <strong style="color: var(--accent-cyan);">${escapeHtml(source.provenance)}</strong></span>
+          &bull;
+          <span style="color: var(--text-subtle);">Verification: <strong style="color: var(--accent-emerald);">Synthetic Approved</strong></span>
+        </div>
+
+        <div>
+          <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
+            Verified Document Excerpt
+          </label>
+          <div style="background: #0B0F19; border: 1px solid var(--border-color); border-left: 3px solid var(--accent-cyan); border-radius: var(--radius-sm); padding: 14px; font-size: 0.875rem; color: var(--text-main); line-height: 1.6;">
+            "${escapeHtml(source.excerpt)}"
+          </div>
+        </div>
+
+        ${linkedClaims.length > 0 ? `
+          <div style="margin-top: 14px;">
+            <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
+              Substantiated Factual Claims (${linkedClaims.length})
+            </label>
+            <ul style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 16px 12px 28px; margin: 0; font-size: 0.8125rem; color: var(--text-main); line-height: 1.6;">
+              ${linkedClaims.map(c => `<li>${escapeHtml(c.statement)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      `,
+      actionsHtml: `
+        <button class="btn btn-secondary" onclick="app.closeInspectorModal()">Close</button>
+        <button class="btn btn-primary" onclick="app.closeInspectorModal(); app.navigateTo('evidence'); setTimeout(() => app.runEvidenceSearch('${source.id}'), 200);">
+          Search in Explorer &rarr;
+        </button>
+      `,
+    });
+  },
+
+  async openRuleDetail(ruleId) {
+    const k = await this.ensureKnowledgeLoaded();
+    const rule = k?.rules?.find(r => r.id === ruleId);
+    if (!rule) {
+      this.showToast(`Rule ${ruleId} not found.`, 'warning');
+      return;
+    }
+
+    const disclaimer = rule.disclaimer_id ? k?.disclaimers?.find(d => d.id === rule.disclaimer_id) : null;
+
+    this.showInspectorModal({
+      title: `${rule.id}: ${rule.title}`,
+      badge: `<span class="badge badge-${rule.severity}">${rule.severity}</span>`,
+      bodyHtml: `
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; font-size: 0.75rem;">
+          <span style="color: var(--text-subtle);">Category: <strong style="color: var(--text-main); text-transform: uppercase;">${rule.category}</strong></span>
+          &bull;
+          <span style="color: var(--text-subtle);">Status: <span class="badge ${rule.status === 'active' ? 'badge-state-approved' : 'badge-high'}">${rule.status}</span></span>
+          &bull;
+          <span style="color: var(--text-subtle);">Applies To: <strong style="color: var(--accent-cyan);">${escapeHtml(rule.applies_to_product_id || 'All Inkloom Products')}</strong></span>
+        </div>
+
+        <div>
+          <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
+            Rule Specification
+          </label>
+          <div style="background: #0B0F19; border: 1px solid var(--border-color); border-left: 3px solid var(--accent-primary); border-radius: var(--radius-sm); padding: 14px; font-size: 0.875rem; color: var(--text-main); line-height: 1.6;">
+            ${escapeHtml(rule.description)}
+          </div>
+        </div>
+
+        ${rule.superseded_by ? `
+          <div style="margin-top: 10px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8125rem; color: #FDA4AF;">
+            ⚠️ This rule has been <strong>superseded by ${rule.superseded_by}</strong>.
+          </div>
+        ` : ''}
+
+        ${rule.conflicts_with ? `
+          <div style="margin-top: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8125rem; color: #FCD34D;">
+            ⚠️ This rule <strong>conflicts with ${rule.conflicts_with}</strong>.
+          </div>
+        ` : ''}
+
+        ${disclaimer ? `
+          <div style="margin-top: 14px;">
+            <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
+              Mandatory Associated Disclaimer (${disclaimer.id})
+            </label>
+            <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: #DDD6FE; font-style: italic;">
+              "${escapeHtml(disclaimer.required_text)}"
+            </div>
+          </div>
+        ` : ''}
+      `,
+      actionsHtml: `
+        <button class="btn btn-secondary" onclick="app.closeInspectorModal()">Close</button>
+        <button class="btn btn-primary" onclick="app.closeInspectorModal(); app.navigateTo('knowledge'); setTimeout(() => knowledgeView.switchSubTab('rules'), 200);">
+          View All Rules &rarr;
+        </button>
+      `,
+    });
+  },
+
+  showInspectorModal({ title, badge, bodyHtml, actionsHtml }) {
+    this.closeInspectorModal();
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'inspector-backdrop';
+    backdrop.id = 'inspectorBackdrop';
+    backdrop.onclick = (e) => {
+      if (e.target === backdrop) app.closeInspectorModal();
+    };
+
+    backdrop.innerHTML = `
+      <div class="inspector-modal">
+        <div class="inspector-header">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">${escapeHtml(title)}</h3>
+            ${badge || ''}
+          </div>
+          <button class="banner-close" onclick="app.closeInspectorModal()">&times;</button>
+        </div>
+        <div class="inspector-body">
+          ${bodyHtml}
+        </div>
+        <div class="inspector-footer">
+          ${actionsHtml || '<button class="btn btn-secondary" onclick="app.closeInspectorModal()">Close</button>'}
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+  },
+
+  closeInspectorModal() {
+    const existing = document.getElementById('inspectorBackdrop');
+    if (existing) existing.remove();
+  },
 };
+
+// Global escape key listener to close modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    app.closeInspectorModal();
+  }
+});
 
 // Boot application when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

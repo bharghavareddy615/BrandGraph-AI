@@ -371,8 +371,12 @@ const reviewView = {
     const findingsList = document.getElementById('findingsList');
     if (findingsList) {
       findingsList.innerHTML = `
-        <div class="loading-state" style="padding: 40px 0;">
-          <p>Editor cleared. Click <strong>"Check Brand Compliance"</strong> to review content.</p>
+        <div class="empty-state" style="padding: 48px 16px;">
+          <div class="empty-state-icon">🛡️</div>
+          <div class="empty-state-title">Ready for Governance Review</div>
+          <div class="empty-state-desc">
+            Type or paste campaign copy, or choose one of the test presets above, then click <strong>"Check Brand Compliance"</strong>.
+          </div>
         </div>
       `;
     }
@@ -595,18 +599,18 @@ const reviewView = {
           </div>
 
           <!-- Evidence & Provenance Bar -->
-          <div style="display: flex; align-items: center; gap: 10px; font-size: 0.72rem; flex-wrap: wrap; margin-top: 4px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 0.72rem; flex-wrap: wrap; margin-top: 6px;">
             ${f.rule_id ? `
-              <span style="background: rgba(255, 255, 255, 0.05); padding: 2px 6px; border-radius: 4px; color: var(--accent-primary);">
-                Rule: <strong>${f.rule_id}</strong>
+              <span class="badge-clickable badge-rule-link" onclick="app.openRuleDetail('${f.rule_id}')" title="Inspect Rule ${f.rule_id} in Brand Knowledge">
+                📜 Rule: <strong>${f.rule_id}</strong>
               </span>
             ` : ''}
             ${f.evidence_source_id ? `
-              <span style="background: rgba(6, 182, 212, 0.1); padding: 2px 6px; border-radius: 4px; color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.2);">
-                Evidence: <strong>${f.evidence_source_id}</strong>
+              <span class="badge-clickable badge-source-link" onclick="app.openEvidenceSource('${f.evidence_source_id}')" title="Inspect Source ${f.evidence_source_id} & Linked Claims">
+                📑 Evidence: <strong>${f.evidence_source_id}</strong>
               </span>
             ` : ''}
-            <span style="color: ${f.evidence_status === 'Needs verification' ? 'var(--accent-amber)' : 'var(--text-subtle)'};">
+            <span style="color: ${f.evidence_status === 'Needs verification' ? 'var(--accent-amber)' : 'var(--text-subtle)'}; font-size: 0.72rem; padding: 2px 6px;">
               Status: <strong>${f.evidence_status || 'not_applicable'}</strong>
             </span>
           </div>

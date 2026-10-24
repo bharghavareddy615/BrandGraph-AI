@@ -110,7 +110,14 @@ const evaluationView = {
                   ${this.getTestCaseInputPreview(r.test_id)}
                 </td>
                 <td style="font-size: 0.75rem;">
-                  <div><strong style="color: var(--text-subtle);">Expected:</strong> ${r.expected_category || 'None'} ${r.expected_rule_or_evidence ? `(${r.expected_rule_or_evidence})` : ''}</div>
+                  <div>
+                    <strong style="color: var(--text-subtle);">Expected:</strong> ${r.expected_category || 'None'} 
+                    ${r.expected_rule_or_evidence ? (
+                      r.expected_rule_or_evidence.startsWith('RULE-')
+                        ? `<span class="badge-clickable badge-rule-link" onclick="app.openRuleDetail('${r.expected_rule_or_evidence}')">(${r.expected_rule_or_evidence})</span>`
+                        : `<span class="badge-clickable badge-source-link" onclick="app.openEvidenceSource('${r.expected_rule_or_evidence}')">(${r.expected_rule_or_evidence})</span>`
+                    ) : ''}
+                  </div>
                   <div><strong style="color: var(--accent-cyan);">Actual:</strong> ${r.actual_categories.length > 0 ? r.actual_categories.join(', ') : 'None'}</div>
                 </td>
                 <td>
@@ -123,7 +130,7 @@ const evaluationView = {
                   ${r.error_message ? `<div style="color: var(--accent-rose);">${escapeHtml(r.error_message)}</div>` : ''}
                 </td>
                 <td>
-                  <button class="btn btn-secondary btn-sm" onclick="evaluationView.testInStudio('${r.test_id}')">
+                  <button class="btn btn-secondary btn-sm" onclick="evaluationView.testInStudio('${r.test_id}')" title="Load prompt and test in Content Review">
                     Inspect &rarr;
                   </button>
                 </td>
@@ -131,6 +138,14 @@ const evaluationView = {
             `).join('')}
           </tbody>
         </table>
+        ${results.length === 0 ? `
+          <div class="empty-state" style="padding: 48px 16px;">
+            <div class="empty-state-icon">⚡</div>
+            <div class="empty-state-title">No Stress Tests Executed Yet</div>
+            <div class="empty-state-desc">Run the curated 10-scenario stress benchmark to evaluate accuracy, offline resilience, and rule detection.</div>
+            <button class="btn btn-primary" onclick="evaluationView.runLiveSuite()">Run Test Suite Now</button>
+          </div>
+        ` : ''}
       </div>
     `;
   },

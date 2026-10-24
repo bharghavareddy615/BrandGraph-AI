@@ -4,6 +4,7 @@
 
 const workflowView = {
   selectedDraftId: null,
+  currentFilter: 'ALL',
 
   async render(container, selectId = null) {
     container.innerHTML = `
@@ -15,28 +16,74 @@ const workflowView = {
 
     try {
       const drafts = await api.listDrafts();
-      this.selectedDraftId = selectId || (drafts.length > 0 ? drafts[0].id : null);
+      
+      const filter = this.currentFilter;
+      const filteredDrafts = filter === 'ALL' 
+        ? drafts 
+        : drafts.filter(d => d.current_state === filter);
+
+      if (selectId) {
+        this.selectedDraftId = selectId;
+      } else if (!this.selectedDraftId || !drafts.some(d => d.id === this.selectedDraftId)) {
+        this.selectedDraftId = filteredDrafts.length > 0 ? filteredDrafts[0].id : (drafts.length > 0 ? drafts[0].id : null);
+      }
 
       let selectedDraft = null;
       if (this.selectedDraftId) {
         selectedDraft = await api.getDraft(this.selectedDraftId).catch(() => null);
       }
 
+      // Count by states
+      const counts = {
+        all: drafts.length,
+        submitted: drafts.filter(d => d.current_state === 'Submitted for Review').length,
+        needsRevision: drafts.filter(d => d.current_state === 'Needs Revision').length,
+        approved: drafts.filter(d => d.current_state === 'Approved').length,
+        draft: drafts.filter(d => d.current_state === 'Draft').length,
+      };
+
       container.innerHTML = `
-        <div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px; height: calc(100vh - 170px);">
+        <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px; height: calc(100vh - 170px);">
           <!-- Left Column: Drafts Queue -->
           <div class="card" style="display: flex; flex-direction: column; padding: 16px; overflow: hidden;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color);">
-              <strong style="font-size: 0.9375rem;">Review Queue (${drafts.length})</strong>
-              <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('review')">+ New</button>
+              <div>
+                <strong style="font-size: 0.9375rem;">Review Queue</strong>
+                <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 6px;">(${filteredDrafts.length}/${drafts.length})</span>
+              </div>
+              <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('review')">+ New Draft</button>
+            </div>
+
+            <!-- Queue Filter Pills -->
+            <div class="workflow-filters">
+              <button class="filter-pill ${this.currentFilter === 'ALL' ? 'active' : ''}" onclick="workflowView.setFilter('ALL')">
+                All (${counts.all})
+              </button>
+              <button class="filter-pill ${this.currentFilter === 'Submitted for Review' ? 'active' : ''}" onclick="workflowView.setFilter('Submitted for Review')">
+                Submitted (${counts.submitted})
+              </button>
+              <button class="filter-pill ${this.currentFilter === 'Needs Revision' ? 'active' : ''}" onclick="workflowView.setFilter('Needs Revision')">
+                Revisions (${counts.needsRevision})
+              </button>
+              <button class="filter-pill ${this.currentFilter === 'Approved' ? 'active' : ''}" onclick="workflowView.setFilter('Approved')">
+                Approved (${counts.approved})
+              </button>
+              <button class="filter-pill ${this.currentFilter === 'Draft' ? 'active' : ''}" onclick="workflowView.setFilter('Draft')">
+                Drafts (${counts.draft})
+              </button>
             </div>
 
             <div style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
-              ${drafts.length === 0 ? `
-                <div style="text-align: center; color: var(--text-muted); padding: 32px 8px; font-size: 0.8125rem;">
-                  No drafts in the review workflow queue yet.
+              ${filteredDrafts.length === 0 ? `
+                <div class="empty-state" style="padding: 40px 12px;">
+                  <div class="empty-state-icon">📋</div>
+                  <div class="empty-state-title" style="font-size: 0.9375rem;">No Matching Drafts</div>
+                  <div class="empty-state-desc" style="font-size: 0.75rem;">
+                    No drafts match the "${this.currentFilter}" filter.
+                  </div>
+                  <button class="btn btn-secondary btn-sm" onclick="workflowView.setFilter('ALL')">Show All Drafts</button>
                 </div>
-              ` : drafts.map(d => `
+              ` : filteredDrafts.map(d => `
                 <div class="draft-queue-item ${d.id === this.selectedDraftId ? 'active' : ''}" 
                      onclick="workflowView.selectDraft('${d.id}')"
                      style="padding: 12px; border-radius: var(--radius-sm); border: 1px solid ${d.id === this.selectedDraftId ? 'var(--accent-primary)' : 'var(--border-color)'}; background: ${d.id === this.selectedDraftId ? 'rgba(139, 92, 246, 0.12)' : '#0B0F19'}; cursor: pointer; transition: all 0.15s ease;">
@@ -60,8 +107,10 @@ const workflowView = {
           <!-- Right Column: Selected Draft Review & Audit History -->
           <div class="card" style="display: flex; flex-direction: column; overflow-y: auto; padding: 24px;">
             ${selectedDraft ? this.renderSelectedDraftDetail(selectedDraft) : `
-              <div class="loading-state" style="padding: 60px 0;">
-                <p>Select a draft from the queue to review and manage decisions.</p>
+              <div class="empty-state" style="padding: 60px 0;">
+                <div class="empty-state-icon">📄</div>
+                <div class="empty-state-title">No Draft Selected</div>
+                <div class="empty-state-desc">Select a draft from the queue on the left to review its findings, collaborate with comments, and record governance decisions.</div>
               </div>
             `}
           </div>
@@ -72,9 +121,15 @@ const workflowView = {
         <div class="card" style="border-color: var(--accent-rose); padding: 24px;">
           <h3 style="color: var(--accent-rose);">Failed to load review workflow</h3>
           <p style="color: var(--text-muted); margin-top: 8px;">${err.message}</p>
+          <button class="btn btn-secondary" style="margin-top: 14px;" onclick="workflowView.render(document.getElementById('pageContainer'))">Retry</button>
         </div>
       `;
     }
+  },
+
+  setFilter(filter) {
+    this.currentFilter = filter;
+    this.render(document.getElementById('pageContainer'));
   },
 
   async selectDraft(draftId) {
@@ -147,8 +202,16 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="badge badge-${f.severity}">${f.severity}</span>
                     <span style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">${f.category.replace('_', ' ')}</span>
-                    ${f.rule_id ? `<span style="background: rgba(139, 92, 246, 0.15); color: var(--accent-primary); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${f.rule_id}</span>` : ''}
-                    ${f.evidence_source_id ? `<span style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">${f.evidence_source_id}</span>` : ''}
+                    ${f.rule_id ? `
+                      <span class="badge-clickable badge-rule-link" onclick="app.openRuleDetail('${f.rule_id}')" title="Inspect Rule ${f.rule_id}">
+                        📜 ${f.rule_id}
+                      </span>
+                    ` : ''}
+                    ${f.evidence_source_id ? `
+                      <span class="badge-clickable badge-source-link" onclick="app.openEvidenceSource('${f.evidence_source_id}')" title="Inspect Evidence Source ${f.evidence_source_id}">
+                        📑 ${f.evidence_source_id}
+                      </span>
+                    ` : ''}
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="badge ${f.evidence_status === 'Needs verification' ? 'badge-high' : 'badge-low'}" style="font-size: 0.68rem;">

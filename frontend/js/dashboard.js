@@ -29,16 +29,16 @@ const dashboardView = {
       container.innerHTML = `
         <!-- Top Stats Row -->
         <div class="stat-grid">
-          <div class="card stat-card">
+          <div class="card stat-card" style="cursor: pointer; transition: transform var(--transition-fast), border-color var(--transition-fast);" onclick="app.navigateTo('workflow')" title="View all drafts in Workflow">
             <div class="stat-header">
               <span>Total Drafts</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
             </div>
             <div class="stat-value">${totalDrafts}</div>
-            <div class="stat-subtitle">${stateCounts['Approved'] || 0} approved &bull; ${stateCounts['Needs Revision'] || 0} revisions needed</div>
+            <div class="stat-subtitle">${stateCounts['Approved'] || 0} approved &bull; ${stateCounts['Submitted for Review'] || 0} in review &bull; ${stateCounts['Needs Revision'] || 0} revisions</div>
           </div>
 
-          <div class="card stat-card">
+          <div class="card stat-card" style="cursor: pointer; transition: transform var(--transition-fast), border-color var(--transition-fast);" onclick="workflowView.setFilter('Needs Revision'); app.navigateTo('workflow')" title="Inspect active policy issues">
             <div class="stat-header">
               <span>Active Issues</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -47,7 +47,7 @@ const dashboardView = {
             <div class="stat-subtitle">${severityCounts['critical'] || 0} critical &bull; ${severityCounts['high'] || 0} high priority</div>
           </div>
 
-          <div class="card stat-card">
+          <div class="card stat-card" style="cursor: pointer; transition: transform var(--transition-fast), border-color var(--transition-fast);" onclick="app.navigateTo('evaluation')" title="View live Stress Tester results">
             <div class="stat-header">
               <span>Stress Test Accuracy</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
@@ -56,7 +56,7 @@ const dashboardView = {
             <div class="stat-subtitle">${evalData?.passed_tests || 0} passed / ${evalData?.total_tests || 0} real synthetic tests</div>
           </div>
 
-          <div class="card stat-card">
+          <div class="card stat-card" style="cursor: pointer; transition: transform var(--transition-fast), border-color var(--transition-fast);" onclick="app.navigateTo('settings')" title="View Responsible AI Disclosures">
             <div class="stat-header">
               <span>AI Engine Mode</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
@@ -98,8 +98,13 @@ const dashboardView = {
             <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('workflow')">View All Drafts &rarr;</button>
           </div>
           ${recentDrafts.length === 0 ? `
-            <div style="text-align: center; padding: 24px; color: var(--text-muted);">
-              No drafts reviewed yet. Click <strong>"New Draft Review"</strong> above to test content!
+            <div class="empty-state">
+              <div class="empty-state-icon">📝</div>
+              <div class="empty-state-title">No Drafts Reviewed Yet</div>
+              <div class="empty-state-desc">
+                Evaluate marketing copy or product announcements against Inkloom brand guidelines and evidence.
+              </div>
+              <button class="btn btn-primary" onclick="app.navigateTo('review')">New Draft Review</button>
             </div>
           ` : `
             <table class="data-table">
@@ -116,8 +121,8 @@ const dashboardView = {
               <tbody>
                 ${recentDrafts.map(d => `
                   <tr>
-                    <td><strong>${d.title || 'Untitled Draft'}</strong><br><span style="font-size: 0.7rem; color: var(--text-muted);">${d.id}</span></td>
-                    <td>${d.author || 'Content Creator'}</td>
+                    <td><strong>${escapeHtml(d.title || 'Untitled Draft')}</strong><br><span style="font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono);">${d.id}</span></td>
+                    <td>${escapeHtml(d.author || 'Content Creator')}</td>
                     <td>${app.renderStateBadge(d.current_state)}</td>
                     <td>v${d.version || 1}</td>
                     <td>
@@ -126,7 +131,10 @@ const dashboardView = {
                       </span>
                     </td>
                     <td>
-                      <button class="btn btn-secondary btn-sm" onclick="app.openDraftInReview('${d.id}')">Inspect</button>
+                      <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-secondary btn-sm" onclick="app.openDraftInReview('${d.id}')" title="Inspect draft and highlight findings">Inspect</button>
+                        <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('workflow', '${d.id}')" title="Open in review workflow">Workflow &rarr;</button>
+                      </div>
                     </td>
                   </tr>
                 `).join('')}
