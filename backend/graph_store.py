@@ -203,8 +203,9 @@ class BrandGraphStore:
                 sub_nodes.add(pred)
             target_graph = self.graph.subgraph(sub_nodes)
 
-        # Calculate spring layout positions normalized to a canvas
-        pos = nx.spring_layout(target_graph, seed=42, k=0.9, iterations=50)
+        # Calculate spring layout positions normalized to a canvas (2D & 3D)
+        pos_2d = nx.spring_layout(target_graph, dim=2, seed=42, k=0.9, iterations=50)
+        pos_3d = nx.spring_layout(target_graph, dim=3, seed=42, k=0.9, iterations=60)
 
         color_map = {
             NodeType.BRAND.value: "#8B5CF6",           # Violet
@@ -222,15 +223,19 @@ class BrandGraphStore:
 
         nodes = []
         for node_id, d in target_graph.nodes(data=True):
-            x, y = pos.get(node_id, (0, 0))
+            p2 = pos_2d.get(node_id, (0, 0))
+            p3 = pos_3d.get(node_id, (0, 0, 0))
             ntype = d.get("node_type", "Unknown")
             nodes.append({
                 "id": node_id,
                 "label": d.get("label", node_id),
                 "type": ntype,
                 "color": color_map.get(ntype, "#64748B"),
-                "x": round(float(x) * 350 + 400, 1),
-                "y": round(float(y) * 250 + 300, 1),
+                "x": round(float(p2[0]) * 350 + 400, 1),
+                "y": round(float(p2[1]) * 250 + 300, 1),
+                "x3d": round(float(p3[0]) * 220, 1),
+                "y3d": round(float(p3[1]) * 220, 1),
+                "z3d": round(float(p3[2]) * 220, 1),
                 "properties": {k: v for k, v in d.items() if k not in ("label", "node_type", "id")},
             })
 

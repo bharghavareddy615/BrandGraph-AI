@@ -1241,4 +1241,160 @@ body {
   margin-bottom: 16px;
 }
 
+/* ==========================================================================
+   AI Command Center UI & Futuristic Telemetry
+   ========================================================================== */
+
+/* Header Telemetry Badge */
+.hud-telemetry-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.15);
+  user-select: none;
+}
+
+.hud-pulse-radar {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-cyan);
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 8px var(--accent-cyan);
+}
+
+.hud-pulse-radar::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--accent-cyan);
+  border-radius: 50%;
+  animation: radarWave 2s infinite cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+@keyframes radarWave {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.hud-label {
+  color: var(--text-muted);
+}
+.hud-sep {
+  color: var(--text-subtle);
+}
+.hud-val {
+  color: var(--accent-cyan);
+}
+
+/* --------------------------------------------------------------------------
+   Three.js 3D Neural Space Knowledge Graph
+   -------------------------------------------------------------------------- */
+.three-graph-container {
+  position: relative;
+  width: 100%;
+  height: 620px;
+  background: radial-gradient(circle at 50% 50%, #0D1424 0%, #05070D 100%);
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+}
+
+.three-canvas-wrapper {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.three-canvas-wrapper:active {
+  cursor: grabbing;
+}
+
+.three-hud-controls {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 20;
+  flex-wrap: wrap;
+}
+
+.three-hud-btn {
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.three-hud-btn:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: var(--accent-primary);
+  color: #DDD6FE;
+}
+
+.three-hud-btn.active {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: var(--accent-cyan);
+  color: #A5F3FC;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.25);
+}
+
+.three-node-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(11, 15, 25, 0.94);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--accent-cyan);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.35);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  z-index: 50;
+  transition: opacity 0.15s ease;
+  display: none;
+  transform: translate(-50%, -120%);
+  white-space: nowrap;
+}
+
+.three-telemetry-box {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: rgba(11, 15, 25, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  z-index: 20;
+}
+
+
 

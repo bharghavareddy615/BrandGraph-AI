@@ -97,6 +97,12 @@ const knowledgeView = {
     }
   },
 
+  graphMode: '3d', // '3d' | '2d'
+  selectedProductId: 'ALL',
+  autoOrbit: true,
+  threeState: null,
+
+  // 2D SVG Pan/Zoom state
   zoomLevel: 1.0,
   panX: 0,
   panY: 0,
@@ -111,137 +117,565 @@ const knowledgeView = {
       return;
     }
 
+    // Clean up previous Three.js animation and scene if present
+    this.cleanup3D();
+
     container.innerHTML = `
       <div class="card" style="padding: 0; overflow: hidden;">
-        <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); flex-wrap: wrap; gap: 12px;">
-          <div style="display: flex; align-items: center; gap: 12px;">
+        <!-- Command Center Graph Header -->
+        <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); flex-wrap: wrap; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
             <div>
-              <strong style="font-size: 0.9375rem;">Connected Brand Knowledge Graph</strong>
+              <strong style="font-size: 0.9375rem; letter-spacing: -0.01em;">Brand Knowledge Graph</strong>
               <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 8px;" id="graphNodeCounter">
-                Nodes: ${g.node_count} &bull; Directed Edges: ${g.edge_count}
+                ${g.node_count} Nodes &bull; ${g.edge_count} Directed Edges
               </span>
             </div>
+
+            <!-- View Mode Switcher -->
+            <div class="view-mode-tabs" style="margin-left: 6px;">
+              <button class="view-mode-btn ${this.graphMode === '3d' ? 'active' : ''}" id="btnMode3D" onclick="knowledgeView.switchGraphMode('3d')">
+                🌐 3D Neural Space
+              </button>
+              <button class="view-mode-btn ${this.graphMode === '2d' ? 'active' : ''}" id="btnMode2D" onclick="knowledgeView.switchGraphMode('2d')">
+                🕸️ 2D Blueprint
+              </button>
+            </div>
+
+            <!-- Subgraph Filter -->
             <select id="graphProductFilter" onchange="knowledgeView.filterByProduct(this.value)"
-                    style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); font-size: 0.75rem; padding: 4px 10px; outline: none; cursor: pointer;">
-              <option value="ALL">All Graph Entities</option>
-              <option value="PROD-COPILOT">Inkloom Copilot Subgraph</option>
-              <option value="PROD-SENTINEL">Inkloom Sentinel Subgraph</option>
-              <option value="PROD-CORE">Knowledge Core Subgraph</option>
+                    style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); font-size: 0.75rem; padding: 5px 10px; outline: none; cursor: pointer;">
+              <option value="ALL" ${this.selectedProductId === 'ALL' ? 'selected' : ''}>All Graph Entities</option>
+              <option value="PROD-COPILOT" ${this.selectedProductId === 'PROD-COPILOT' ? 'selected' : ''}>Inkloom Copilot Subgraph</option>
+              <option value="PROD-SENTINEL" ${this.selectedProductId === 'PROD-SENTINEL' ? 'selected' : ''}>Inkloom Sentinel Subgraph</option>
+              <option value="PROD-CORE" ${this.selectedProductId === 'PROD-CORE' ? 'selected' : ''}>Knowledge Core Subgraph</option>
             </select>
           </div>
+
           <div style="font-size: 0.75rem; color: var(--text-subtle);">
-            Drag to pan &bull; Click node for connections &bull; Toolbar for zoom
+            ${this.graphMode === '3d' ? 'Left-click + drag to rotate &bull; Right-click to pan &bull; Scroll to zoom' : 'Drag to pan &bull; Click node for connections &bull; Toolbar for zoom'}
           </div>
         </div>
 
-        <div class="graph-container" id="svgGraphWrapper">
-          <!-- Graph Toolbar -->
-          <div class="graph-toolbar">
-            <button class="graph-btn" onclick="knowledgeView.zoomIn()" title="Zoom In">+</button>
-            <button class="graph-btn" onclick="knowledgeView.zoomOut()" title="Zoom Out">&minus;</button>
-            <button class="graph-btn" onclick="knowledgeView.resetZoom()" title="Reset View">&#x21bb;</button>
-          </div>
+        <!-- 3D Neural Space Container -->
+        <div id="threeGraphWrapper" style="display: ${this.graphMode === '3d' ? 'block' : 'none'}; position: relative;">
+          <div class="three-graph-container" id="threeCanvasContainer">
+            <!-- 3D Canvas injected here -->
+            <div id="threeCanvasWrapper" class="three-canvas-wrapper"></div>
 
-          <svg class="graph-svg" id="brandGraphSvg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-            <defs>
-              <marker id="edgeArrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(148, 163, 184, 0.45)"></path>
-              </marker>
-            </defs>
-            <g id="graphViewport" transform="translate(0, 0) scale(1)">
-              <!-- Edges -->
-              <g id="svgEdgesGroup"></g>
-              <!-- Nodes -->
-              <g id="svgNodesGroup"></g>
-            </g>
-          </svg>
+            <!-- Floating 3D HUD Tooltip -->
+            <div id="threeNodeTooltip" class="three-node-tooltip"></div>
 
-          <!-- Graph Legend -->
-          <div class="graph-legend">
-            <div class="legend-item"><div class="legend-color" style="background: #8B5CF6;"></div> Brand</div>
-            <div class="legend-item"><div class="legend-color" style="background: #06B6D4;"></div> Product</div>
-            <div class="legend-item"><div class="legend-color" style="background: #EF4444;"></div> Rule</div>
-            <div class="legend-item"><div class="legend-color" style="background: #10B981;"></div> Preferred Term</div>
-            <div class="legend-item"><div class="legend-color" style="background: #F59E0B;"></div> Prohibited Term</div>
-            <div class="legend-item"><div class="legend-color" style="background: #3B82F6;"></div> Evidence Source</div>
-            <div class="legend-item"><div class="legend-color" style="background: #EC4899;"></div> Disclaimer</div>
-            <div class="legend-item"><div class="legend-color" style="background: #94A3B8;"></div> Draft Node</div>
-            <div class="legend-item"><div class="legend-color" style="background: #F43F5E;"></div> Finding Node</div>
+            <!-- HUD Control Bar -->
+            <div class="three-hud-controls">
+              <button class="three-hud-btn ${this.autoOrbit ? 'active' : ''}" id="btnAutoOrbit" onclick="knowledgeView.toggleAutoOrbit()">
+                <span>${this.autoOrbit ? '↺ Auto-Orbit ON' : '⏸ Auto-Orbit OFF'}</span>
+              </button>
+              <button class="three-hud-btn" onclick="knowledgeView.reset3DCamera()" title="Reset Camera View">
+                <span>🎯 Reset View</span>
+              </button>
+            </div>
+
+            <!-- Telemetry Indicator -->
+            <div class="three-telemetry-box">
+              <span class="hud-pulse-radar"></span>
+              <span>RENDER: <strong>WEBGL 3D</strong></span>
+              <span>DEPTH: <strong>3000m</strong></span>
+            </div>
           </div>
         </div>
 
-        <!-- Node Inspector Drawer (Shown on click) -->
-        <div id="nodeDetailDrawer" style="display: none; padding: 16px 20px; background: rgba(11, 15, 25, 0.95); border-top: 1px solid var(--border-color);">
+        <!-- 2D SVG Blueprint Container -->
+        <div id="svgGraphWrapper" style="display: ${this.graphMode === '2d' ? 'block' : 'none'}; position: relative;">
+          <div class="graph-container">
+            <!-- Graph Toolbar -->
+            <div class="graph-toolbar">
+              <button class="graph-btn" onclick="knowledgeView.zoomIn()" title="Zoom In">+</button>
+              <button class="graph-btn" onclick="knowledgeView.zoomOut()" title="Zoom Out">&minus;</button>
+              <button class="graph-btn" onclick="knowledgeView.resetZoom()" title="Reset View">&#x21bb;</button>
+            </div>
+
+            <svg class="graph-svg" id="brandGraphSvg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <marker id="edgeArrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(148, 163, 184, 0.45)"></path>
+                </marker>
+              </defs>
+              <g id="graphViewport" transform="translate(0, 0) scale(1)">
+                <g id="svgEdgesGroup"></g>
+                <g id="svgNodesGroup"></g>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Shared Graph Legend -->
+        <div class="graph-legend" style="position: static; border-radius: 0; border-left: none; border-right: none; background: rgba(11, 15, 25, 0.85);">
+          <div class="legend-item"><div class="legend-color" style="background: #8B5CF6;"></div> Brand Core</div>
+          <div class="legend-item"><div class="legend-color" style="background: #06B6D4;"></div> Product</div>
+          <div class="legend-item"><div class="legend-color" style="background: #EF4444;"></div> Rule</div>
+          <div class="legend-item"><div class="legend-color" style="background: #10B981;"></div> Preferred Term</div>
+          <div class="legend-item"><div class="legend-color" style="background: #F59E0B;"></div> Prohibited Term</div>
+          <div class="legend-item"><div class="legend-color" style="background: #3B82F6;"></div> Evidence Source</div>
+          <div class="legend-item"><div class="legend-color" style="background: #EC4899;"></div> Disclaimer</div>
+          <div class="legend-item"><div class="legend-color" style="background: #A855F7;"></div> Claim</div>
+        </div>
+
+        <!-- Node Inspector Drawer (Shown on click in either 3D or 2D) -->
+        <div id="nodeDetailDrawer" style="display: none; padding: 18px 24px; background: rgba(11, 15, 25, 0.96); border-top: 1px solid var(--border-color); animation: fadeIn 0.2s ease;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div id="drawerNodeTitle" style="font-weight: 700; font-size: 0.9375rem;"></div>
-            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('nodeDetailDrawer').style.display='none'">Close</button>
+            <div id="drawerNodeTitle" style="font-weight: 700; font-size: 1rem;"></div>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('nodeDetailDrawer').style.display='none'">Close &times;</button>
           </div>
-          <div id="drawerNodeContent" style="margin-top: 8px; font-size: 0.8125rem; color: var(--text-muted);"></div>
+          <div id="drawerNodeContent" style="margin-top: 10px; font-size: 0.8125rem; color: var(--text-muted);"></div>
         </div>
       </div>
     `;
 
-    this.drawSvgGraph(g);
-    this.bindPanEvents();
-  },
-
-  zoomIn() {
-    this.zoomLevel = Math.min(2.5, this.zoomLevel + 0.2);
-    this.applyTransform();
-  },
-
-  zoomOut() {
-    this.zoomLevel = Math.max(0.5, this.zoomLevel - 0.2);
-    this.applyTransform();
-  },
-
-  resetZoom() {
-    this.zoomLevel = 1.0;
-    this.panX = 0;
-    this.panY = 0;
-    this.applyTransform();
-  },
-
-  applyTransform() {
-    const vp = document.getElementById('graphViewport');
-    if (vp) {
-      vp.setAttribute('transform', `translate(${this.panX}, ${this.panY}) scale(${this.zoomLevel})`);
+    if (this.graphMode === '3d' && window.THREE) {
+      setTimeout(() => this.init3DGraph(g), 50);
+    } else {
+      this.drawSvgGraph(g);
+      this.bindPanEvents();
     }
   },
 
-  bindPanEvents() {
-    const svg = document.getElementById('brandGraphSvg');
-    if (!svg) return;
+  switchGraphMode(mode) {
+    if (mode === '3d' && !window.THREE) {
+      app.showToast('Three.js 3D engine is still initializing. Using 2D Blueprint.', 'info');
+      mode = '2d';
+    }
 
-    svg.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.graph-node')) return; // let node clicks pass through
-      this.isPanning = true;
-      this.startX = e.clientX - this.panX;
-      this.startY = e.clientY - this.panY;
+    this.graphMode = mode;
+    const btn3D = document.getElementById('btnMode3D');
+    const btn2D = document.getElementById('btnMode2D');
+    const wrapper3D = document.getElementById('threeGraphWrapper');
+    const wrapper2D = document.getElementById('svgGraphWrapper');
+
+    if (btn3D) btn3D.classList.toggle('active', mode === '3d');
+    if (btn2D) btn2D.classList.toggle('active', mode === '2d');
+    if (wrapper3D) wrapper3D.style.display = mode === '3d' ? 'block' : 'none';
+    if (wrapper2D) wrapper2D.style.display = mode === '2d' ? 'block' : 'none';
+
+    if (mode === '3d') {
+      this.init3DGraph(this.graphData);
+    } else {
+      this.cleanup3D();
+      this.drawSvgGraph(this.graphData);
+      this.bindPanEvents();
+    }
+  },
+
+  cleanup3D() {
+    if (this.threeState) {
+      if (this.threeState.animId) cancelAnimationFrame(this.threeState.animId);
+      if (this.threeState.renderer) {
+        this.threeState.renderer.dispose();
+        if (this.threeState.renderer.domElement && this.threeState.renderer.domElement.parentNode) {
+          this.threeState.renderer.domElement.parentNode.removeChild(this.threeState.renderer.domElement);
+        }
+      }
+      this.threeState = null;
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // Three.js 3D Neural Space Implementation
+  // --------------------------------------------------------------------------
+  init3DGraph(g) {
+    this.cleanup3D();
+
+    const container = document.getElementById('threeCanvasWrapper');
+    if (!container || !window.THREE) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 620;
+
+    // 1. Scene & Fog
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x05070D, 0.0012);
+
+    // 2. Camera
+    const camera = new THREE.PerspectiveCamera(50, width / height, 1, 3000);
+    camera.position.set(0, 120, 520);
+
+    // 3. Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x05070D, 0.95);
+    container.appendChild(renderer.domElement);
+
+    // 4. OrbitControls
+    let controls = null;
+    if (window.THREE.OrbitControls) {
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.rotateSpeed = 0.8;
+      controls.maxDistance = 1200;
+      controls.minDistance = 60;
+    }
+
+    // 5. Lighting
+    const ambientLight = new THREE.AmbientLight(0x2E1065, 1.2);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0x06B6D4, 1.3);
+    dirLight1.position.set(250, 350, 200);
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0x8B5CF6, 1.1);
+    dirLight2.position.set(-250, -200, -200);
+    scene.add(dirLight2);
+
+    const pointLight = new THREE.PointLight(0x8B5CF6, 2.5, 300);
+    pointLight.position.set(0, 0, 0);
+    scene.add(pointLight);
+
+    // 6. Starfield Background Particles
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 700;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i += 3) {
+      starPos[i] = (Math.random() - 0.5) * 1600;
+      starPos[i + 1] = (Math.random() - 0.5) * 1200;
+      starPos[i + 2] = (Math.random() - 0.5) * 1600;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0x38BDF8, size: 2.2, transparent: true, opacity: 0.45 });
+    const starField = new THREE.Points(starGeo, starMat);
+    scene.add(starField);
+
+    // 7. Ground Orbital Concentric Grid Rings
+    const ringGroup = new THREE.Group();
+    [100, 200, 300, 420].forEach(r => {
+      const ringGeo = new THREE.RingGeometry(r - 0.75, r + 0.75, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x8B5CF6, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = Math.PI / 2;
+      ringMesh.position.y = -140;
+      ringGroup.add(ringMesh);
+    });
+    scene.add(ringGroup);
+
+    // 8. 3D Nodes Setup
+    const nodeMap = {};
+    const nodeMeshList = [];
+    const interactiveMeshes = [];
+
+    g.nodes.forEach(n => {
+      // Determine size and colors
+      let radius = 10;
+      if (n.type === 'Brand') radius = 22;
+      else if (n.type === 'Product') radius = 15;
+      else if (n.type === 'Evidence Source') radius = 12;
+      else if (n.type === 'Rule') radius = 11;
+      else if (n.type === 'Disclaimer') radius = 10;
+      else radius = 9;
+
+      const nodeColor = parseInt(n.color.replace('#', '0x'), 16) || 0x64748B;
+
+      // Sphere Geometry
+      const sphereGeo = new THREE.SphereGeometry(radius, 28, 28);
+      const sphereMat = new THREE.MeshStandardMaterial({
+        color: nodeColor,
+        roughness: 0.25,
+        metalness: 0.35,
+        emissive: nodeColor,
+        emissiveIntensity: n.type === 'Brand' ? 0.45 : (n.type === 'Product' ? 0.3 : 0.18),
+      });
+
+      const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      const x = n.x3d !== undefined ? n.x3d : (n.x - 400) * 0.7;
+      const y = n.y3d !== undefined ? n.y3d : (300 - n.y) * 0.7;
+      const z = n.z3d !== undefined ? n.z3d : (Math.random() - 0.5) * 120;
+      sphereMesh.position.set(x, y, z);
+      sphereMesh.userData = { node: n, radius, baseScale: 1.0, color: nodeColor };
+
+      // Extra outer wireframe ring for Brand core
+      let outerAura = null;
+      if (n.type === 'Brand') {
+        const auraGeo = new THREE.SphereGeometry(radius * 1.35, 16, 16);
+        const auraMat = new THREE.MeshBasicMaterial({ color: 0xA855F7, wireframe: true, transparent: true, opacity: 0.35 });
+        outerAura = new THREE.Mesh(auraGeo, auraMat);
+        sphereMesh.add(outerAura);
+      }
+
+      // Billboard Canvas Text Sprite
+      const sprite = this.createLabelSprite(n.label, n.color);
+      sprite.position.set(0, radius + 11, 0);
+      sphereMesh.add(sprite);
+
+      scene.add(sphereMesh);
+      nodeMap[n.id] = sphereMesh;
+      nodeMeshList.push(sphereMesh);
+      interactiveMeshes.push(sphereMesh);
     });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!this.isPanning) return;
-      this.panX = e.clientX - this.startX;
-      this.panY = e.clientY - this.startY;
-      this.applyTransform();
+    // 9. 3D Edges Setup & Moving Energy Packets
+    const edgeLines = [];
+    const energyPhotons = [];
+
+    g.edges.forEach(e => {
+      const sMesh = nodeMap[e.source];
+      const tMesh = nodeMap[e.target];
+      if (sMesh && tMesh) {
+        const p1 = sMesh.position;
+        const p2 = tMesh.position;
+
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+        const lineMat = new THREE.LineBasicMaterial({
+          color: 0x64748B,
+          transparent: true,
+          opacity: 0.3,
+          linewidth: 1.5,
+        });
+
+        const line = new THREE.Line(lineGeo, lineMat);
+        line.userData = { sourceId: e.source, targetId: e.target, type: e.type };
+        scene.add(line);
+        edgeLines.push(line);
+
+        // Energy photon traveling along edge
+        const photonGeo = new THREE.SphereGeometry(1.8, 8, 8);
+        const photonMat = new THREE.MeshBasicMaterial({
+          color: e.type === 'PROHIBITS' ? 0xF59E0B : (e.type === 'REQUIRES' ? 0xEC4899 : 0x06B6D4),
+          transparent: true,
+          opacity: 0.85,
+        });
+        const photonMesh = new THREE.Mesh(photonGeo, photonMat);
+        scene.add(photonMesh);
+
+        energyPhotons.push({
+          mesh: photonMesh,
+          sourcePos: p1,
+          targetPos: p2,
+          t: Math.random(),
+          speed: 0.004 + Math.random() * 0.004,
+        });
+      }
     });
 
-    window.addEventListener('mouseup', () => {
-      this.isPanning = false;
+    // 10. Raycasting & Tooltip Interaction
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2(-999, -999);
+    let hoveredMesh = null;
+    let pointerDownPos = { x: 0, y: 0 };
+    const tooltip = document.getElementById('threeNodeTooltip');
+
+    const onPointerMove = (evt) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((evt.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((evt.clientY - rect.top) / rect.height) * 2 + 1;
+
+      // Update tooltip position
+      if (tooltip && hoveredMesh) {
+        tooltip.style.left = `${evt.clientX - rect.left}px`;
+        tooltip.style.top = `${evt.clientY - rect.top}px`;
+      }
+    };
+
+    const onPointerDown = (evt) => {
+      pointerDownPos = { x: evt.clientX, y: evt.clientY };
+    };
+
+    const onPointerUp = (evt) => {
+      const dist = Math.hypot(evt.clientX - pointerDownPos.x, evt.clientY - pointerDownPos.y);
+      if (dist < 6 && hoveredMesh) {
+        // Registered as a click!
+        const node = hoveredMesh.userData.node;
+        this.showNodeDetail(node.id);
+
+        // Smooth camera target transition towards clicked node
+        if (controls) {
+          const targetPos = hoveredMesh.position;
+          controls.target.copy(targetPos);
+        }
+      }
+    };
+
+    renderer.domElement.addEventListener('pointermove', onPointerMove);
+    renderer.domElement.addEventListener('pointerdown', onPointerDown);
+    renderer.domElement.addEventListener('pointerup', onPointerUp);
+
+    // 11. Responsive Resize Observer
+    const resizeObserver = new ResizeObserver(() => {
+      const w = container.clientWidth || 800;
+      const h = container.clientHeight || 620;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
     });
+    resizeObserver.observe(container);
+
+    // 12. Animation Loop
+    this.threeState = {
+      scene,
+      camera,
+      renderer,
+      controls,
+      nodeMeshList,
+      edgeLines,
+      energyPhotons,
+      starField,
+      animId: null,
+    };
+
+    const animate = () => {
+      this.threeState.animId = requestAnimationFrame(animate);
+
+      // Auto-Orbit
+      if (this.autoOrbit && controls && !controls.state) {
+        scene.rotation.y += 0.0018;
+      }
+
+      // Rotate star background subtly
+      starField.rotation.y += 0.0004;
+
+      // Pulse energy photons along edges
+      energyPhotons.forEach(p => {
+        p.t = (p.t + p.speed) % 1.0;
+        p.mesh.position.lerpVectors(p.sourcePos, p.targetPos, p.t);
+      });
+
+      // Raycast checks
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(interactiveMeshes);
+
+      if (intersects.length > 0) {
+        const topMesh = intersects[0].object;
+        if (hoveredMesh !== topMesh) {
+          if (hoveredMesh) hoveredMesh.scale.set(1, 1, 1);
+          hoveredMesh = topMesh;
+          hoveredMesh.scale.set(1.3, 1.3, 1.3);
+
+          const n = hoveredMesh.userData.node;
+          if (tooltip) {
+            tooltip.style.display = 'block';
+            tooltip.innerHTML = `
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${n.color};"></span>
+                <strong>${escapeHtml(n.label)}</strong>
+              </div>
+              <div style="font-size:0.7rem; color:var(--text-muted);">${n.id} &bull; <span style="text-transform:uppercase;">${n.type}</span></div>
+              <div style="font-size:0.68rem; color:var(--accent-cyan); margin-top:3px;">Click to view entity connections &rarr;</div>
+            `;
+          }
+          container.style.cursor = 'pointer';
+
+          // Highlight connected edges
+          edgeLines.forEach(l => {
+            if (l.userData.sourceId === n.id || l.userData.targetId === n.id) {
+              l.material.opacity = 0.9;
+              l.material.color.setHex(0x06B6D4);
+            } else {
+              l.material.opacity = 0.12;
+              l.material.color.setHex(0x475569);
+            }
+          });
+        }
+      } else {
+        if (hoveredMesh) {
+          hoveredMesh.scale.set(1, 1, 1);
+          hoveredMesh = null;
+          if (tooltip) tooltip.style.display = 'none';
+          container.style.cursor = 'grab';
+
+          // Restore edge lines
+          edgeLines.forEach(l => {
+            l.material.opacity = 0.3;
+            l.material.color.setHex(0x64748B);
+          });
+        }
+      }
+
+      if (controls) controls.update();
+      renderer.render(scene, camera);
+    };
+
+    animate();
+  },
+
+  createLabelSprite(text, color = '#FFFFFF') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 384;
+    canvas.height = 96;
+    const ctx = canvas.getContext('2d');
+
+    // Background pill
+    ctx.fillStyle = 'rgba(7, 9, 19, 0.85)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.lineWidth = 3;
+
+    const r = 20;
+    const w = 360, h = 76, x = 12, y = 10;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Text Label
+    ctx.fillStyle = color;
+    ctx.font = 'bold 30px "Plus Jakarta Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const display = text.length > 20 ? text.slice(0, 18) + '...' : text;
+    ctx.fillText(display, 192, 48);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
+    const sprite = new THREE.Sprite(spriteMaterial);
+    sprite.scale.set(48, 12, 1);
+    return sprite;
+  },
+
+  toggleAutoOrbit() {
+    this.autoOrbit = !this.autoOrbit;
+    const btn = document.getElementById('btnAutoOrbit');
+    if (btn) {
+      btn.classList.toggle('active', this.autoOrbit);
+      btn.innerHTML = `<span>${this.autoOrbit ? '↺ Auto-Orbit ON' : '⏸ Auto-Orbit OFF'}</span>`;
+    }
+    app.showToast(this.autoOrbit ? 'Auto-Orbit enabled' : 'Auto-Orbit paused', 'info');
+  },
+
+  reset3DCamera() {
+    if (this.threeState && this.threeState.camera && this.threeState.controls) {
+      this.threeState.camera.position.set(0, 120, 520);
+      this.threeState.controls.target.set(0, 0, 0);
+      this.threeState.controls.update();
+      app.showToast('3D Camera reset to center', 'info');
+    }
   },
 
   async filterByProduct(productId) {
+    this.selectedProductId = productId;
     try {
       const g = await api.getBrandGraph(productId === 'ALL' ? null : productId);
       this.graphData = g;
       const counterEl = document.getElementById('graphNodeCounter');
       if (counterEl) {
-        counterEl.innerText = `Nodes: ${g.node_count} • Directed Edges: ${g.edge_count}`;
+        counterEl.innerText = `${g.node_count} Nodes • ${g.edge_count} Directed Edges`;
       }
-      this.resetZoom();
-      this.drawSvgGraph(g);
+
+      if (this.graphMode === '3d') {
+        this.init3DGraph(g);
+      } else {
+        this.resetZoom();
+        this.drawSvgGraph(g);
+      }
+      app.showToast(`Filtered graph: ${productId === 'ALL' ? 'All Entities' : productId}`, 'info');
     } catch (e) {
       app.showToast('Could not filter graph: ' + e.message, 'error');
     }

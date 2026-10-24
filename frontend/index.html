@@ -89,6 +89,12 @@
           <p id="pageSubtitle" class="page-subtitle">Real-time brand governance statistics and verification status.</p>
         </div>
         <div class="header-actions">
+          <div class="hud-telemetry-badge" title="Live Governance Pipeline Active">
+            <span class="hud-pulse-radar"></span>
+            <span class="hud-label">COMMAND CENTER</span>
+            <span class="hud-sep">&bull;</span>
+            <span class="hud-val">SECURE</span>
+          </div>
           <button class="btn btn-secondary" onclick="app.refreshCurrentTab()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             <span>Refresh</span>
@@ -114,7 +120,11 @@
   <!-- Notification Toast Container -->
   <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Scripts -->
+  <!-- 3D Graphics Engine (Three.js & OrbitControls) -->
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/vendor/OrbitControls.js"></script>
+
+  <!-- Application Controllers -->
   <script src="js/api.js"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/review.js"></script>
