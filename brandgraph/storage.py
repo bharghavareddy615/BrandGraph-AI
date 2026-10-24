@@ -4,6 +4,7 @@ import json
 import sqlite3
 from typing import Any, Dict, List, Optional
 from datetime import datetime
+import uuid
 
 from brandgraph.config import config
 from brandgraph.schemas import (
@@ -252,7 +253,7 @@ class StorageManager:
             """, (new_state.value, now_iso, draft_id))
 
             # Add decision audit record
-            decision_id = f"DEC-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{draft_id[:6]}"
+            decision_id = f"DEC-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
             cursor.execute("""
             INSERT INTO review_decisions (
                 id, draft_id, reviewer, from_state, to_state, decision_notes, timestamp

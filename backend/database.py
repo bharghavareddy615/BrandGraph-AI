@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional
+import uuid
 
 from backend.schemas import (
     ContentDraft,
@@ -243,7 +244,7 @@ class DatabaseManager:
             UPDATE drafts SET current_state = ?, updated_at = ? WHERE id = ?;
             """, (new_state.value, now_iso, draft_id))
 
-            decision_id = f"DEC-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{draft_id[:6]}"
+            decision_id = f"DEC-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
             cursor.execute("""
             INSERT INTO review_decisions (
                 id, draft_id, reviewer, from_state, to_state, decision_notes, timestamp
