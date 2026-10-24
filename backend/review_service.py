@@ -8,6 +8,7 @@ import uuid
 from backend.schemas import (
     ContentDraft,
     Finding,
+    FindingCategory,
     ReviewState,
     EvidenceStatus,
     NodeType,
@@ -30,7 +31,7 @@ class ReviewService:
     ):
         self.graph_store = graph_store or BrandGraphStore()
         self.retriever = EvidenceRetriever(self.graph_store)
-        self.rule_engine = DeterministicRuleEngine()
+        self.rule_engine = DeterministicRuleEngine(retriever=self.retriever)
         self.ai_review_service = AIReviewService()
         self.db = db_manager or DatabaseManager()
 
@@ -67,15 +68,14 @@ class ReviewService:
         retrieval_context = self.retriever.retrieve_with_context(content, top_k=3)
         retrieved_sources = retrieval_context["results"]
 
-        # Link evidence to findings if unlinked
+        # Link evidence to claim findings if not already explicitly linked
         for f in deterministic_findings:
-            if not f.evidence_source_id and retrieved_sources:
-                snippet_matches = self.retriever.search(f.matched_text, top_k=1)
-                if snippet_matches:
-                    f.evidence_source_id = snippet_matches[0].source_id
-                    f.evidence_excerpt = snippet_matches[0].text
-                    if f.evidence_status == EvidenceStatus.NOT_APPLICABLE:
-                        f.evidence_status = EvidenceStatus.SUPPORTED
+            if f.category in (FindingCategory.UNSUPPORTED_CLAIM, FindingCategory.CONTRADICTED_CLAIM):
+                if not f.evidence_source_id and retrieved_sources:
+                    snippet_matches = self.retriever.search(f.matched_text, top_k=1)
+                    if snippet_matches:
+                        f.evidence_source_id = snippet_matches[0].source_id
+                        f.evidence_excerpt = snippet_matches[0].text
 
         all_findings = list(deterministic_findings)
 

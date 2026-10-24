@@ -133,7 +133,7 @@ def get_sample_disclaimers() -> List[Disclaimer]:
             brand_id="BRAND-INKLOOM",
             name="Performance & Benchmark Disclaimer",
             required_text="Performance figures depend on workload characteristics, configuration, and cluster capacity. Individual outcomes may vary.",
-            trigger_keywords=["latency", "throughput", "benchmark", "45ms", "faster", "speed"],
+            trigger_keywords=["latency", "throughput", "benchmark", "benchmarks", "45ms"],
             trigger_rule_id="RULE-003",
         ),
         Disclaimer(
@@ -141,7 +141,7 @@ def get_sample_disclaimers() -> List[Disclaimer]:
             brand_id="BRAND-INKLOOM",
             name="Advisory & Compliance Disclaimer",
             required_text="Inkloom AI does not provide legal, clinical, or financial advice. All recommendations require verification by authorized personnel.",
-            trigger_keywords=["compliance", "legal", "audit guarantee", "regulatory proof"],
+            trigger_keywords=["audit guarantee", "regulatory proof", "guaranteed compliance", "legal advice", "financial advice"],
             trigger_rule_id="RULE-004",
         ),
     ]
