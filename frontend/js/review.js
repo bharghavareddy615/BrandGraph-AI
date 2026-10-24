@@ -604,11 +604,17 @@ const reviewView = {
               <span class="badge-clickable badge-rule-link" onclick="app.openRuleDetail('${f.rule_id}')" title="Inspect Rule ${f.rule_id} in Brand Knowledge">
                 📜 Rule: <strong>${f.rule_id}</strong>
               </span>
+              <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.68rem;" onclick="app.navigateTo('knowledge'); setTimeout(() => knowledgeView.showNodeDetail('${f.rule_id}'), 150);" title="Locate Rule in 3D Knowledge Graph">
+                🌐 3D Graph &rarr;
+              </button>
             ` : ''}
             ${f.evidence_source_id ? `
               <span class="badge-clickable badge-source-link" onclick="app.openEvidenceSource('${f.evidence_source_id}')" title="Inspect Source ${f.evidence_source_id} & Linked Claims">
                 📑 Evidence: <strong>${f.evidence_source_id}</strong>
               </span>
+              <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.68rem;" onclick="app.navigateTo('knowledge'); setTimeout(() => knowledgeView.showNodeDetail('${f.evidence_source_id}'), 150);" title="Locate Evidence in 3D Knowledge Graph">
+                🌐 3D Graph &rarr;
+              </button>
             ` : ''}
             <span style="color: ${f.evidence_status === 'Needs verification' ? 'var(--accent-amber)' : 'var(--text-subtle)'}; font-size: 0.72rem; padding: 2px 6px;">
               Status: <strong>${f.evidence_status || 'not_applicable'}</strong>

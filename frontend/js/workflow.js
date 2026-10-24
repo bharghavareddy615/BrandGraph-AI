@@ -262,21 +262,28 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
 
         <!-- Decision Audit Trail -->
         <div>
-          <h4 style="font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; color: var(--text-subtle); margin-bottom: 8px;">Audit Decision Log</h4>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <h4 style="font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; color: var(--text-subtle);">
+              Audit Decision Log
+            </h4>
+            <span class="badge badge-state-approved" style="font-size: 0.65rem; letter-spacing: 0.05em;">
+              VERIFIED LEDGER
+            </span>
+          </div>
           <div style="display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto;">
             ${decisions.length === 0 ? `
               <div style="font-size: 0.78rem; color: var(--text-muted);">No historical transitions recorded.</div>
             ` : decisions.map(d => `
-              <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px; font-size: 0.78rem;">
-                <div style="display: flex; justify-content: space-between; color: var(--text-subtle); margin-bottom: 2px;">
-                  <span>${escapeHtml(d.reviewer)}</span>
-                  <span>${new Date(d.timestamp).toLocaleDateString()} ${new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              <div style="background: #0B0F19; border: 1px solid var(--border-color); border-left: 3px solid var(--accent-emerald); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-subtle); margin-bottom: 3px;">
+                  <span style="font-weight: 600; color: var(--accent-cyan);">${escapeHtml(d.reviewer)}</span>
+                  <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-subtle);">${d.id || 'EVT-LOG'} &bull; ${new Date(d.timestamp).toLocaleDateString()} ${new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
                 <div>
-                  State changed from <span style="font-weight: 600;">${d.from_state}</span> &rarr; <span style="font-weight: 700; color: var(--accent-primary);">${d.to_state}</span>
+                  State transition: <span style="font-weight: 600; color: var(--text-muted);">${d.from_state}</span> &rarr; <span style="font-weight: 700; color: var(--accent-primary);">${d.to_state}</span>
                 </div>
                 ${d.decision_notes ? `
-                  <div style="color: var(--text-muted); margin-top: 4px; font-style: italic;">
+                  <div style="color: #CBD5E1; margin-top: 4px; font-style: italic; background: rgba(255,255,255,0.02); padding: 4px 8px; border-radius: 4px;">
                     "${escapeHtml(d.decision_notes)}"
                   </div>
                 ` : ''}

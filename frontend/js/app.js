@@ -167,8 +167,9 @@ const app = {
                     </ul>
                   </div>
                 ` : ''}
-                <div style="display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <div style="display: flex; gap: 8px; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 10px; flex-wrap: wrap;">
                   <button class="btn btn-secondary btn-sm" onclick="app.openEvidenceSource('${s.id}')">Inspect Source &rarr;</button>
+                  <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('knowledge'); setTimeout(() => knowledgeView.showNodeDetail('${s.id}'), 150);" title="Locate in 3D Graph">🌐 3D Graph &rarr;</button>
                   <button class="btn btn-secondary btn-sm" onclick="app.runEvidenceSearch('${escapeHtml(s.title)}')">Query in RAG &rarr;</button>
                 </div>
               </div>
@@ -455,6 +456,9 @@ const app = {
       `,
       actionsHtml: `
         <button class="btn btn-secondary" onclick="app.closeInspectorModal()">Close</button>
+        <button class="btn btn-secondary" onclick="app.closeInspectorModal(); app.navigateTo('knowledge'); setTimeout(() => knowledgeView.showNodeDetail('${source.id}'), 200);" title="Fly to Evidence node in 3D Space">
+          🌐 Explore in 3D Graph &rarr;
+        </button>
         <button class="btn btn-primary" onclick="app.closeInspectorModal(); app.navigateTo('evidence'); setTimeout(() => app.runEvidenceSearch('${source.id}'), 200);">
           Search in Explorer &rarr;
         </button>
@@ -518,6 +522,9 @@ const app = {
       `,
       actionsHtml: `
         <button class="btn btn-secondary" onclick="app.closeInspectorModal()">Close</button>
+        <button class="btn btn-secondary" onclick="app.closeInspectorModal(); app.navigateTo('knowledge'); setTimeout(() => knowledgeView.showNodeDetail('${rule.id}'), 200);" title="Fly to Rule node in 3D Space">
+          🌐 Explore in 3D Graph &rarr;
+        </button>
         <button class="btn btn-primary" onclick="app.closeInspectorModal(); app.navigateTo('knowledge'); setTimeout(() => knowledgeView.switchSubTab('rules'), 200);">
           View All Rules &rarr;
         </button>
