@@ -99,6 +99,7 @@ const knowledgeView = {
 
   graphMode: '3d', // '3d' | '2d'
   selectedProductId: 'ALL',
+  activeCategoryFilter: 'ALL',
   autoOrbit: true,
   threeState: null,
 
@@ -174,13 +175,21 @@ const knowledgeView = {
               <button class="three-hud-btn" onclick="knowledgeView.reset3DCamera()" title="Reset Camera View">
                 <span>🎯 Reset View</span>
               </button>
+              <div style="width: 1px; height: 18px; background: var(--border-color); margin: 0 4px;"></div>
+              <!-- Category Filter Chips -->
+              <button class="three-hud-btn ${this.activeCategoryFilter === 'ALL' ? 'active' : ''}" onclick="knowledgeView.filter3DCategory('ALL')">All</button>
+              <button class="three-hud-btn ${this.activeCategoryFilter === 'PRODUCT' ? 'active' : ''}" onclick="knowledgeView.filter3DCategory('PRODUCT')">Products</button>
+              <button class="three-hud-btn ${this.activeCategoryFilter === 'RULE' ? 'active' : ''}" onclick="knowledgeView.filter3DCategory('RULE')">Rules</button>
+              <button class="three-hud-btn ${this.activeCategoryFilter === 'CLAIM' ? 'active' : ''}" onclick="knowledgeView.filter3DCategory('CLAIM')">Claims</button>
+              <button class="three-hud-btn ${this.activeCategoryFilter === 'EVIDENCE' ? 'active' : ''}" onclick="knowledgeView.filter3DCategory('EVIDENCE')">Evidence</button>
             </div>
 
             <!-- Telemetry Indicator -->
             <div class="three-telemetry-box">
               <span class="hud-pulse-radar"></span>
-              <span>RENDER: <strong>WEBGL 3D</strong></span>
-              <span>DEPTH: <strong>3000m</strong></span>
+              <span>RENDER: <strong>THREE.JS 3D</strong></span>
+              <span>FILTER: <strong id="hudFilterLabel">${this.activeCategoryFilter}</strong></span>
+              <span>GRAPH: <strong>${g.node_count} ENTITIES</strong></span>
             </div>
           </div>
         </div>
@@ -400,6 +409,14 @@ const knowledgeView = {
         const auraMat = new THREE.MeshBasicMaterial({ color: 0xA855F7, wireframe: true, transparent: true, opacity: 0.35 });
         outerAura = new THREE.Mesh(auraGeo, auraMat);
         sphereMesh.add(outerAura);
+      }
+
+      // Warning beacon ring for Superseded or Conflicting rules
+      if (n.type === 'Rule' && n.properties && (n.properties.status === 'Superseded' || n.properties.superseded_by)) {
+        const warnGeo = new THREE.RingGeometry(radius * 1.35, radius * 1.55, 32);
+        const warnMat = new THREE.MeshBasicMaterial({ color: 0xF59E0B, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
+        const warnRing = new THREE.Mesh(warnGeo, warnMat);
+        sphereMesh.add(warnRing);
       }
 
       // Billboard Canvas Text Sprite
@@ -726,45 +743,176 @@ const knowledgeView = {
     nodesGroup.innerHTML = nodesHtml;
   },
 
+  filter3DCategory(category) {
+    this.activeCategoryFilter = category;
+    const filterLabel = document.getElementById('hudFilterLabel');
+    if (filterLabel) filterLabel.innerText = category;
+
+    // Update 3D HUD button active styles
+    document.querySelectorAll('.three-hud-controls .three-hud-btn').forEach(btn => {
+      const text = btn.innerText.trim();
+      const catMap = { 'All': 'ALL', 'Products': 'PRODUCT', 'Rules': 'RULE', 'Claims': 'CLAIM', 'Evidence': 'EVIDENCE' };
+      if (catMap[text]) {
+        btn.classList.toggle('active', catMap[text] === category);
+      }
+    });
+
+    if (!this.threeState || !this.threeState.nodeMeshList) return;
+
+    this.threeState.nodeMeshList.forEach(mesh => {
+      const type = mesh.userData.node.type;
+      let match = true;
+      if (category === 'PRODUCT') match = (type === 'Brand' || type === 'Product');
+      else if (category === 'RULE') match = (type === 'Rule' || type === 'Disclaimer');
+      else if (category === 'CLAIM') match = (type === 'Claim' || type === 'Preferred Term' || type === 'Prohibited Term');
+      else if (category === 'EVIDENCE') match = (type === 'Evidence Source');
+
+      if (match) {
+        mesh.visible = true;
+        mesh.scale.set(1.15, 1.15, 1.15);
+        mesh.material.opacity = 1.0;
+        mesh.material.transparent = false;
+      } else {
+        mesh.scale.set(0.45, 0.45, 0.45);
+        mesh.material.transparent = true;
+        mesh.material.opacity = 0.15;
+      }
+    });
+
+    // Update Edge line opacities accordingly
+    if (this.threeState.edgeLines) {
+      this.threeState.edgeLines.forEach(l => {
+        l.material.opacity = (category === 'ALL') ? 0.3 : 0.08;
+      });
+    }
+
+    app.showToast(`3D Space filtered: ${category}`, 'info');
+  },
+
+  smoothFocusNode(targetPos) {
+    if (!this.threeState || !this.threeState.controls || !this.threeState.camera) return;
+    const controls = this.threeState.controls;
+    controls.target.lerp(targetPos, 0.85);
+    controls.update();
+  },
+
   showNodeDetail(nodeId) {
     const node = this.graphData.nodes.find(n => n.id === nodeId);
     if (!node) return;
+
+    // Smooth camera focus if in 3D
+    if (this.threeState && this.threeState.nodeMeshList) {
+      const mesh = this.threeState.nodeMeshList.find(m => m.userData.node.id === nodeId);
+      if (mesh) {
+        this.smoothFocusNode(mesh.position);
+      }
+    }
 
     const drawer = document.getElementById('nodeDetailDrawer');
     const titleEl = document.getElementById('drawerNodeTitle');
     const contentEl = document.getElementById('drawerNodeContent');
 
     drawer.style.display = 'block';
+    
+    // Type color pill & status
+    const status = node.properties?.status || 'Active';
+    const isSuperseded = status === 'Superseded' || node.properties?.superseded_by;
+
     titleEl.innerHTML = `
-      <span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: ${node.color}; margin-right: 6px;"></span>
-      ${escapeHtml(node.label)} <span style="font-size: 0.72rem; color: var(--text-subtle); font-family: var(--font-mono);">(${node.id} &bull; ${node.type})</span>
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span style="display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: ${node.color}; box-shadow: 0 0 8px ${node.color};"></span>
+        <span style="font-size: 1.05rem; font-weight: 700;">${escapeHtml(node.label)}</span>
+        <span class="badge ${isSuperseded ? 'badge-high' : 'badge-low'}">${escapeHtml(node.type)}</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">${node.id}</span>
+        ${isSuperseded ? '<span class="badge badge-critical">SUPERSEDED POLICY</span>' : ''}
+      </div>
     `;
 
-    let propsHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">';
-    for (const [k, v] of Object.entries(node.properties || {})) {
-      propsHtml += `
-        <div>
-          <span style="font-size: 0.7rem; color: var(--text-subtle); text-transform: uppercase;">${k.replace('_', ' ')}:</span>
-          <div>${Array.isArray(v) ? v.join(', ') : escapeHtml(String(v))}</div>
-        </div>
-      `;
-    }
-    propsHtml += '</div>';
-
-    // Show linked edges
+    // Filter incoming and outgoing edges
     const incoming = this.graphData.edges.filter(e => e.target === nodeId);
     const outgoing = this.graphData.edges.filter(e => e.source === nodeId);
 
-    let linksHtml = '<div style="margin-top: 12px; font-size: 0.75rem;">';
-    if (incoming.length > 0) {
-      linksHtml += `<div><strong>Incoming:</strong> ${incoming.map(e => `[${e.source}] &rarr; <em>${e.type}</em>`).join(', ')}</div>`;
-    }
-    if (outgoing.length > 0) {
-      linksHtml += `<div><strong>Outgoing:</strong> ${outgoing.map(e => `<em>${e.type}</em> &rarr; [${e.target}]`).join(', ')}</div>`;
-    }
-    linksHtml += '</div>';
+    let html = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 10px;">
+        <!-- Left: Node Properties & Compliance Details -->
+        <div>
+          <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-subtle); margin-bottom: 8px; font-weight: 700;">
+            Node Properties &amp; Metadata
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+    `;
 
-    contentEl.innerHTML = propsHtml + linksHtml;
+    for (const [k, v] of Object.entries(node.properties || {})) {
+      html += `
+        <div>
+          <span style="font-size: 0.68rem; color: var(--text-subtle); text-transform: uppercase;">${k.replace(/_/g, ' ')}:</span>
+          <div style="font-size: 0.8125rem; font-weight: 600; color: var(--text-main);">
+            ${Array.isArray(v) ? v.join(', ') : escapeHtml(String(v))}
+          </div>
+        </div>
+      `;
+    }
+
+    html += `
+          </div>
+        </div>
+
+        <!-- Right: Connected Relationships & Actions -->
+        <div>
+          <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-subtle); margin-bottom: 8px; font-weight: 700;">
+            Interconnected Topology (${incoming.length + outgoing.length} Connections)
+          </div>
+          <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; max-height: 140px; overflow-y: auto;">
+    `;
+
+    if (incoming.length > 0) {
+      html += `
+        <div style="margin-bottom: 8px;">
+          <span style="font-size: 0.7rem; color: var(--accent-cyan); font-weight: 700;">INCOMING:</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+            ${incoming.map(e => `
+              <span class="badge-clickable badge-source-link" onclick="knowledgeView.showNodeDetail('${e.source}')" title="Inspect ${e.source}">
+                ${e.source} &bull; ${e.type}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    if (outgoing.length > 0) {
+      html += `
+        <div>
+          <span style="font-size: 0.7rem; color: var(--accent-primary); font-weight: 700;">OUTGOING:</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+            ${outgoing.map(e => `
+              <span class="badge-clickable badge-rule-link" onclick="knowledgeView.showNodeDetail('${e.target}')" title="Inspect ${e.target}">
+                ${e.type} &rarr; ${e.target}
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    html += `
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+            ${node.type === 'Evidence Source' ? `
+              <button class="btn btn-secondary btn-sm" onclick="app.openEvidenceSource('${node.id}')">Inspect Source Document &rarr;</button>
+            ` : ''}
+            ${node.type === 'Rule' ? `
+              <button class="btn btn-secondary btn-sm" onclick="app.openRuleDetail('${node.id}')">View Full Rule Policy &rarr;</button>
+            ` : ''}
+            <button class="btn btn-secondary btn-sm" onclick="app.navigateTo('review')">Validate in Review Studio &rarr;</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    contentEl.innerHTML = html;
   },
 
   renderRulesTab(container) {
