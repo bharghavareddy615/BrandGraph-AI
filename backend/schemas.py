@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # -----------------------------------------------------------------------------
@@ -232,7 +232,7 @@ class SearchResult(BaseModel):
 # -----------------------------------------------------------------------------
 
 class ReviewRequest(BaseModel):
-    content: str
+    content: str = ""
     title: Optional[str] = "Untitled Marketing Draft"
     author: Optional[str] = "Content Creator"
     product_id: Optional[str] = "PROD-COPILOT"
@@ -240,22 +240,41 @@ class ReviewRequest(BaseModel):
 
 
 class CreateDraftRequest(BaseModel):
-    title: str
-    content: str
+    title: str = "Untitled Draft"
+    content: str = ""
     author: str = "Content Creator"
     product_id: Optional[str] = "PROD-COPILOT"
 
 
 class AddCommentRequest(BaseModel):
-    author: str
-    comment_text: str
+    author: str = "Reviewer"
+    comment_text: str = ""
     finding_id: Optional[str] = None
 
 
 class UpdateStatusRequest(BaseModel):
     new_state: ReviewState
-    reviewer: str
+    reviewer: str = "Reviewer"
     decision_notes: Optional[str] = ""
+
+    @field_validator("new_state", mode="before")
+    @classmethod
+    def normalize_state(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            mapping = {
+                "draft": ReviewState.DRAFT,
+                "needs revision": ReviewState.NEEDS_REVISION,
+                "needs_revision": ReviewState.NEEDS_REVISION,
+                "submitted for review": ReviewState.SUBMITTED_FOR_REVIEW,
+                "submitted": ReviewState.SUBMITTED_FOR_REVIEW,
+                "submitted_for_review": ReviewState.SUBMITTED_FOR_REVIEW,
+                "approved": ReviewState.APPROVED,
+                "rejected": ReviewState.REJECTED,
+            }
+            cleaned = v.strip().lower()
+            if cleaned in mapping:
+                return mapping[cleaned]
+        return v
 
 
 class ApplyRewriteRequest(BaseModel):

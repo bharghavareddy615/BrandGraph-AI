@@ -7,7 +7,9 @@ const app = {
 
   init() {
     this.bindNavigation();
-    this.navigateTo('dashboard');
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialTab = urlParams.get('tab') || 'dashboard';
+    this.navigateTo(initialTab);
   },
 
   bindNavigation() {
@@ -22,6 +24,13 @@ const app = {
   },
 
   navigateTo(tabName, param = null) {
+    // Teardown previous view resources if navigating away from knowledge
+    if (this.currentTab === 'knowledge' && tabName !== 'knowledge') {
+      if (typeof knowledgeView !== 'undefined' && knowledgeView && typeof knowledgeView.cleanup3D === 'function') {
+        knowledgeView.cleanup3D();
+      }
+    }
+
     this.currentTab = tabName;
 
     // Update sidebar active state
@@ -125,7 +134,7 @@ const app = {
             </div>
             <div style="position: relative; width: 360px;">
               <input type="text" id="evidenceSearchInput" placeholder="Query evidence retrieval (e.g. 45ms, TLS, cognitive IQ)..."
-                     style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; color: var(--text-main); font-size: 0.8125rem; width: 100%; outline: none;">
+                     style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 14px; color: var(--text-main); font-size: 0.8125rem; width: 100%; outline: none;">
             </div>
           </div>
 
@@ -156,7 +165,7 @@ const app = {
                 <div style="font-size: 0.72rem; color: var(--text-subtle); margin-bottom: 10px;">
                   Published: ${s.publication_date} &bull; Provenance: ${escapeHtml(s.provenance)}
                 </div>
-                <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
+                <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
                   "${escapeHtml(s.excerpt)}"
                 </div>
                 ${linked.length > 0 ? `
@@ -268,7 +277,7 @@ const app = {
             <div style="font-size: 0.72rem; color: var(--text-subtle); margin-bottom: 10px;">
               Section: ${escapeHtml(r.section || 'Findings')} &bull; Provenance: ${escapeHtml(r.provenance || 'Official Audit')}
             </div>
-            <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
+            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--text-main); line-height: 1.5; margin-bottom: 12px;">
               "${escapeHtml(r.text)}"
             </div>
           </div>
@@ -324,7 +333,7 @@ const app = {
               External LLMs are purely optional and only called when explicitly enabled in <code>.env</code>.
             </p>
 
-            <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; font-size: 0.8125rem;">
+            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; font-size: 0.8125rem;">
               <div style="margin-bottom: 6px;"><strong>Active Provider:</strong> ${aiStatus.provider}</div>
               <div style="margin-bottom: 6px;"><strong>Configured Model:</strong> ${aiStatus.model}</div>
               <div style="color: var(--text-subtle);"><strong>Notice:</strong> ${aiStatus.message}</div>
@@ -438,7 +447,7 @@ const app = {
           <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
             Verified Document Excerpt
           </label>
-          <div style="background: #0B0F19; border: 1px solid var(--border-color); border-left: 3px solid var(--accent-cyan); border-radius: var(--radius-sm); padding: 14px; font-size: 0.875rem; color: var(--text-main); line-height: 1.6;">
+          <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-cyan); border-radius: var(--radius-sm); padding: 14px; font-size: 0.875rem; color: var(--text-main); line-height: 1.6;">
             "${escapeHtml(source.excerpt)}"
           </div>
         </div>
@@ -448,7 +457,7 @@ const app = {
             <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
               Substantiated Factual Claims (${linkedClaims.length})
             </label>
-            <ul style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 16px 12px 28px; margin: 0; font-size: 0.8125rem; color: var(--text-main); line-height: 1.6;">
+            <ul style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px 16px 12px 28px; margin: 0; font-size: 0.8125rem; color: var(--text-main); line-height: 1.6;">
               ${linkedClaims.map(c => `<li>${escapeHtml(c.statement)}</li>`).join('')}
             </ul>
           </div>
@@ -492,19 +501,19 @@ const app = {
           <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
             Rule Specification
           </label>
-          <div style="background: #0B0F19; border: 1px solid var(--border-color); border-left: 3px solid var(--accent-primary); border-radius: var(--radius-sm); padding: 14px; font-size: 0.875rem; color: var(--text-main); line-height: 1.6;">
+          <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-primary); border-radius: var(--radius-sm); padding: 14px; font-size: 0.875rem; color: var(--text-main); line-height: 1.6;">
             ${escapeHtml(rule.description)}
           </div>
         </div>
 
         ${rule.superseded_by ? `
-          <div style="margin-top: 10px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8125rem; color: #FDA4AF;">
+          <div style="margin-top: 10px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8125rem; color: var(--accent-rose);">
             ⚠️ This rule has been <strong>superseded by ${rule.superseded_by}</strong>.
           </div>
         ` : ''}
 
         ${rule.conflicts_with ? `
-          <div style="margin-top: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8125rem; color: #FCD34D;">
+          <div style="margin-top: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 0.8125rem; color: var(--accent-amber);">
             ⚠️ This rule <strong>conflicts with ${rule.conflicts_with}</strong>.
           </div>
         ` : ''}
@@ -514,7 +523,7 @@ const app = {
             <label style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); display: block; margin-bottom: 6px;">
               Mandatory Associated Disclaimer (${disclaimer.id})
             </label>
-            <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: #DDD6FE; font-style: italic;">
+            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px; font-size: 0.8125rem; color: var(--accent-primary); font-style: italic;">
               "${escapeHtml(disclaimer.required_text)}"
             </div>
           </div>
@@ -576,7 +585,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Boot application when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+// Boot application when DOM is ready (or immediately if already interactive/complete)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    app.init();
+  });
+} else {
   app.init();
-});
+}

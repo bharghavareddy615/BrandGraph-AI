@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, List, Optional, Set, Tuple
 import networkx as nx
+# pyrefly: ignore[missing-import]
 import plotly.graph_objects as go
 
 from brandgraph.schemas import (
@@ -308,7 +309,7 @@ class BrandGraphStore:
 
         # Distinct modern color palette for entity types
         color_map = {
-            NodeType.BRAND.value: "#6366F1",           # Indigo
+            NodeType.BRAND.value: "#8055E8",           # Violet
             NodeType.PRODUCT.value: "#06B6D4",         # Cyan
             NodeType.RULE.value: "#EF4444",            # Red
             NodeType.PREFERRED_TERM.value: "#10B981",  # Emerald

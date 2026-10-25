@@ -78,10 +78,10 @@ const reviewView = {
           <div class="editor-header">
             <div style="flex: 1; margin-right: 12px;">
               <input type="text" id="draftTitle" value="${escapeHtml(draft.title)}" 
-                     style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 1.05rem; font-weight: 700; color: var(--text-main); outline: none; width: 100%; padding: 8px 12px; transition: border-color 0.15s ease;"
+                     style="background: var(--bg-glass-input); backdrop-filter: var(--glass-blur-sm); -webkit-backdrop-filter: var(--glass-blur-sm); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); font-size: 1.05rem; font-weight: 700; color: var(--text-main); outline: none; width: 100%; padding: 8px 12px; transition: all 0.15s ease;"
                      placeholder="Enter Draft Title..."
-                     onfocus="this.style.borderColor='var(--accent-primary)'"
-                     onblur="this.style.borderColor='var(--border-color)'">
+                     onfocus="this.style.borderColor='var(--accent-primary)'; this.style.boxShadow='0 0 0 2px rgba(139, 92, 246, 0.25)';"
+                     onblur="this.style.borderColor='var(--glass-border)'; this.style.boxShadow='none';">
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
                 Product: <strong style="color: var(--accent-cyan);">Inkloom Copilot</strong> &bull; Author: ${draft.author}
                 ${draft.id ? `&bull; Draft ID: <span style="font-family: var(--font-mono);">${draft.id}</span>` : ''}

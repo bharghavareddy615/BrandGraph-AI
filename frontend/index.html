@@ -3,134 +3,267 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BrandGraph AI — Inkloom AI Brand Governance Platform</title>
+  <title>BrandGraph AI — Evidence-Linked Brand Governance</title>
+  
+  <!-- Modern Geometric Sans + Editorial High-Fashion Serif -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,400;1,500;1,600;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Editorial Luxury Landing Stylesheet -->
+  <link rel="stylesheet" href="css/landing.css">
 </head>
-<body class="dark-theme">
-  <!-- Top Synthetic Demo Banner -->
-  <div class="synthetic-banner" id="syntheticBanner">
-    <div class="banner-content">
-      <span class="badge-synthetic">SYNTHETIC DEMO DATA</span>
-      <span>All brand rules, product facts, benchmarks, and audit sources are simulated for the <strong>Inkloom AI Brand Governance Challenge</strong>.</span>
-    </div>
-    <button class="banner-close" onclick="document.getElementById('syntheticBanner').style.display='none'">&times;</button>
-  </div>
+<body>
+  <!-- Main Rounded Forma Canvas Container -->
+  <div class="landing-canvas">
+    
+    <!-- Navigation Bar -->
+    <header class="landing-nav">
+      <a href="/" class="brand-identity">
+        <span class="brand-title">BrandGraph<span class="brand-reg">&reg;</span></span>
+        <span class="brand-subtitle-tag">Inkloom Governance</span>
+      </a>
 
-  <div class="app-layout">
-    <!-- Sidebar Navigation -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-logo">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#brandGrad)"/>
-            <defs>
-              <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#8B5CF6"/>
-                <stop offset="100%" stop-color="#06B6D4"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <div class="brand-name">BrandGraph <span class="ai-pill">AI</span></div>
-          <div class="brand-sub">Inkloom Governance</div>
-        </div>
-      </div>
+      <nav class="nav-links-wrap">
+        <a href="#overview" class="nav-link nav-link-desktop">Overview</a>
+        <a href="/app?tab=knowledge" class="nav-link nav-link-desktop">Knowledge Graph</a>
+        <a href="/app?tab=review" class="nav-link nav-link-desktop">Governance</a>
+        <a href="/app?tab=workflow" class="nav-link nav-link-desktop">Workflow</a>
+        
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle Warm Cream / Dark Theme">
+          <span id="themeIcon">&#9790;</span>
+        </button>
 
-      <nav class="sidebar-nav">
-        <button class="nav-item active" data-tab="dashboard">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-          <span>Dashboard</span>
-        </button>
-        <button class="nav-item" data-tab="review">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-          <span>Content Review</span>
-        </button>
-        <button class="nav-item" data-tab="knowledge">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <span>Brand Knowledge</span>
-        </button>
-        <button class="nav-item" data-tab="evidence">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span>Evidence Explorer</span>
-        </button>
-        <button class="nav-item" data-tab="workflow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          <span>Review Workflow</span>
-        </button>
-        <button class="nav-item" data-tab="evaluation">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span>Stress Tester</span>
-        </button>
-        <button class="nav-item" data-tab="settings">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          <span>Settings</span>
-        </button>
+        <!-- Forma Pill Launch Button -->
+        <a href="/app" class="btn-launch-pill" title="Launch Brand Governance Command Center">
+          <span>Launch App</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
       </nav>
+    </header>
 
-      <div class="sidebar-footer">
-        <div class="system-status-indicator">
-          <span class="status-dot green"></span>
-          <span class="status-label">Engine: <strong>Local Offline Mode</strong></span>
-        </div>
-        <div class="team-credit">Team ProjectX &bull; Amrita</div>
+    <!-- Hero Section -->
+    <section class="landing-hero" id="overview">
+      <!-- Architectural Faint Watermark Typography -->
+      <div class="watermark-typography" aria-hidden="true">brandgraph</div>
+
+      <!-- Flowing 3D Ribbon Visualization (Three.js) -->
+      <div class="hero-3d-visual-wrapper" id="hero3DContainer" title="Drag to inspect 3D governance ribbon">
+        <!-- Three.js Canvas injected here by landing-visual.js -->
       </div>
-    </aside>
 
-    <!-- Main Content Area -->
-    <main class="main-content">
-      <!-- Header -->
-      <header class="top-header">
-        <div class="header-left">
-          <h1 id="pageTitle" class="page-title">Dashboard Overview</h1>
-          <p id="pageSubtitle" class="page-subtitle">Real-time brand governance statistics and verification status.</p>
-        </div>
-        <div class="header-actions">
-          <div class="hud-telemetry-badge" title="Live Governance Pipeline Active">
-            <span class="hud-pulse-radar"></span>
-            <span class="hud-label">COMMAND CENTER</span>
-            <span class="hud-sep">&bull;</span>
-            <span class="hud-val">SECURE</span>
+      <!-- Split Bottom Content (Forma Editorial Layout) -->
+      <div class="hero-bottom-grid">
+        <!-- Bottom Left: Tag & Large Editorial Headline -->
+        <div class="hero-left-col">
+          <div class="hero-tag-label">
+            <span class="hero-tag-dash"></span>
+            <span>AI Brand Governance Platform &mdash; Est. 2024</span>
           </div>
-          <button class="btn btn-secondary" onclick="app.refreshCurrentTab()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            <span>Refresh</span>
-          </button>
-          <button class="btn btn-primary" onclick="app.navigateTo('review')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>New Draft Review</span>
-          </button>
-        </div>
-      </header>
 
-      <!-- Content Container for Dynamic Pages -->
-      <div class="page-container" id="pageContainer">
-        <!-- Rendered by JavaScript controllers -->
-        <div class="loading-state">
-          <div class="spinner"></div>
-          <p>Connecting to BrandGraph AI Engine...</p>
+          <h1 class="hero-headline">
+            <span class="headline-sans">Trust every claim.</span>
+            <span class="headline-serif">Govern every brand.</span>
+          </h1>
+        </div>
+
+        <!-- Bottom Right: Supporting Text & High-Fashion Action Buttons -->
+        <div class="hero-right-col">
+          <p class="hero-supporting-text">
+            Validate marketing content against brand policies, verified evidence, and compliance rules with transparent, traceable AI governance.
+          </p>
+
+          <div class="hero-actions-group">
+            <a href="/app" class="btn-primary-forma" title="Open the full Governance Dashboard">
+              <span>Launch Command Center</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+
+            <a href="/app?tab=knowledge" class="btn-secondary-forma" title="Inspect the interactive 3D Neural Knowledge Graph">
+              <span>Explore Knowledge Graph</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+          </div>
+
+          <div class="hero-corner-credit">
+            by Inkloom AI &bull; Deterministic &amp; RAG Powered
+          </div>
         </div>
       </div>
-    </main>
+    </section>
+
+    <!-- Live Telemetry Stats Bar -->
+    <section class="landing-stats-bar" aria-label="Platform Telemetry">
+      <div class="stat-pill-item">
+        <span class="stat-indicator-dot"></span>
+        <span class="stat-pill-label">Active Policy Rules:</span>
+        <span class="stat-pill-val" id="statRuleCount">8 Policies</span>
+      </div>
+
+      <div class="stat-pill-item">
+        <span class="stat-indicator-dot" style="background-color: var(--landing-accent-cyan);"></span>
+        <span class="stat-pill-label">Verified Sources:</span>
+        <span class="stat-pill-val" id="statSourceCount">4 Audit Certifications</span>
+      </div>
+
+      <div class="stat-pill-item">
+        <span class="stat-indicator-dot" style="background-color: var(--landing-accent-violet);"></span>
+        <span class="stat-pill-label">Graph Entities:</span>
+        <span class="stat-pill-val" id="statEntityCount">28 Connected Nodes</span>
+      </div>
+
+      <div class="stat-pill-item">
+        <span class="stat-indicator-dot" style="background-color: var(--landing-accent-amber);"></span>
+        <span class="stat-pill-label">Benchmark Accuracy:</span>
+        <span class="stat-pill-val" id="statAccuracy">100% Pass Rate</span>
+      </div>
+    </section>
+
+    <!-- Restrained Editorial Three-Card Section -->
+    <section class="landing-cards-section" id="governance">
+      <div class="section-editorial-header">
+        <div>
+          <div class="section-pretitle">The Governance Engine</div>
+          <h2 class="section-title">Precision verification <em>under attention.</em></h2>
+        </div>
+        <p class="section-subtext">
+          Three synchronized pillars working in harmony to guarantee brand integrity, audit compliance, and zero hallucinations.
+        </p>
+      </div>
+
+      <div class="editorial-cards-grid">
+        <!-- Card 01: Content Review -->
+        <a href="/app?tab=review" class="editorial-card" title="Open Content Review Studio">
+          <div class="card-top-row">
+            <span class="card-index">01 / DRAFT AUDIT</span>
+            <span class="card-badge">Deterministic</span>
+          </div>
+          <div class="card-body">
+            <h3 class="card-heading">Deterministic Content Review</h3>
+            <p class="card-desc">
+              Instant evaluation of marketing copy, press releases, and campaign text against approved brand vocabulary, prohibited superlatives, and mandatory disclaimers.
+            </p>
+          </div>
+          <div class="card-footer-action">
+            <span>Open Review Studio</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </a>
+
+        <!-- Card 02: Evidence Grounding -->
+        <a href="/app?tab=evidence" class="editorial-card" title="Open Evidence Explorer">
+          <div class="card-top-row">
+            <span class="card-index">02 / PROVENANCE</span>
+            <span class="card-badge">RAG Grounded</span>
+          </div>
+          <div class="card-body">
+            <h3 class="card-heading">Evidence-Linked Grounding</h3>
+            <p class="card-desc">
+              Multi-source retrieval linking every product assertion to verified SOC-2 audit reports, ISO security certifications, and actual performance whitepapers.
+            </p>
+          </div>
+          <div class="card-footer-action">
+            <span>Inspect Evidence Sources</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </a>
+
+        <!-- Card 03: Human Review Workflow -->
+        <a href="/app?tab=workflow" class="editorial-card" title="Open Review Workflow Queue">
+          <div class="card-top-row">
+            <span class="card-index">03 / LIFECYCLE</span>
+            <span class="card-badge">Human-in-the-Loop</span>
+          </div>
+          <div class="card-body">
+            <h3 class="card-heading">Staged Review Workflow</h3>
+            <p class="card-desc">
+              Rigorous governance lifecycle requiring human editorial sign-off, comment threads for requested revisions, and irreversible audit decision logging.
+            </p>
+          </div>
+          <div class="card-footer-action">
+            <span>View Review Queue</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <!-- Minimal Editorial Footer -->
+    <footer class="landing-footer">
+      <div class="footer-brand">
+        BrandGraph AI &bull; Inkloom Governance Platform
+      </div>
+
+      <div class="footer-credits">
+        ProjectX &bull; Amrita Vishwa Vidyapeetham
+      </div>
+
+      <nav class="footer-nav">
+        <a href="/app">Command Center</a>
+        <a href="/app?tab=knowledge">3D Graph</a>
+        <a href="/app?tab=evaluation">Stress Tester</a>
+        <a href="/app?tab=settings">Disclosures</a>
+        <a href="/docs" target="_blank" rel="noopener">API Docs</a>
+      </nav>
+    </footer>
+
   </div>
 
-  <!-- Notification Toast Container -->
-  <div class="toast-container" id="toastContainer"></div>
-
-  <!-- 3D Graphics Engine (Three.js & OrbitControls) -->
+  <!-- Three.js Graphics Engine -->
   <script src="js/vendor/three.min.js"></script>
-  <script src="js/vendor/OrbitControls.js"></script>
+  
+  <!-- Editorial 3D Ribbon Visualization Script -->
+  <script src="js/landing-visual.js"></script>
 
-  <!-- Application Controllers -->
-  <script src="js/api.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/review.js"></script>
-  <script src="js/knowledge.js"></script>
-  <script src="js/workflow.js"></script>
-  <script src="js/evaluation.js"></script>
-  <script src="js/app.js"></script>
+  <!-- Live Telemetry & Theme Toggle Script -->
+  <script>
+    // Theme Toggle Functionality
+    const themeBtn = document.getElementById('themeToggleBtn');
+    const themeIcon = document.getElementById('themeIcon');
+
+    // Load saved preference
+    const savedTheme = localStorage.getItem('brandgraph_landing_theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+      if (themeIcon) themeIcon.innerHTML = '&#9728;'; // Sun
+    }
+
+    if (themeBtn) {
+      themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('brandgraph_landing_theme', isDark ? 'dark' : 'light');
+        if (themeIcon) {
+          themeIcon.innerHTML = isDark ? '&#9728;' : '&#9790;'; // Sun / Moon
+        }
+      });
+    }
+
+    // Fetch real metrics from backend API to populate telemetry stats
+    async function loadLiveTelemetry() {
+      try {
+        const [dashRes, graphRes] = await Promise.all([
+          fetch('/api/dashboard').then(r => r.json()).catch(() => null),
+          fetch('/api/brand/graph').then(r => r.json()).catch(() => null),
+        ]);
+
+        if (dashRes && dashRes.metrics) {
+          const m = dashRes.metrics;
+          if (m.total_rules) document.getElementById('statRuleCount').innerText = `${m.total_rules} Policies`;
+          if (m.total_sources) document.getElementById('statSourceCount').innerText = `${m.total_sources} Audit Sources`;
+          if (m.benchmark_accuracy !== undefined) document.getElementById('statAccuracy').innerText = `${m.benchmark_accuracy}% Pass Rate`;
+        }
+
+        if (graphRes && graphRes.node_count) {
+          document.getElementById('statEntityCount').innerText = `${graphRes.node_count} Connected Nodes`;
+        }
+      } catch (e) {
+        console.warn('Telemetry loaded defaults:', e);
+      }
+    }
+
+    loadLiveTelemetry();
+  </script>
 </body>
 </html>

@@ -2,7 +2,14 @@
  * API client for BrandGraph AI
  */
 
-const API_BASE = window.location.origin;
+const API_BASE = (() => {
+  if (typeof window === 'undefined') return 'http://localhost:8000';
+  if (window.location.protocol === 'file:') return 'http://localhost:8000';
+  if (!window.location.port || window.location.port === '80' || window.location.port === '443' || window.location.port === '8000') {
+    return window.location.origin;
+  }
+  return 'http://localhost:8000';
+})();
 
 window.escapeHtml = function(str) {
   if (str === null || str === undefined) return '';
@@ -14,13 +21,28 @@ window.escapeHtml = function(str) {
     .replace(/'/g, '&#39;');
 };
 
+function formatApiError(errorData, status) {
+  if (!errorData) return `HTTP Error ${status}`;
+  if (typeof errorData.detail === 'string') return errorData.detail;
+  if (Array.isArray(errorData.detail)) {
+    return errorData.detail
+      .map(d => (d.msg ? `${d.loc ? d.loc.filter(l => l !== 'body').join('.') + ': ' : ''}${d.msg}` : JSON.stringify(d)))
+      .join('; ');
+  }
+  if (errorData.detail && typeof errorData.detail === 'object') {
+    return JSON.stringify(errorData.detail);
+  }
+  if (errorData.message) return errorData.message;
+  return `HTTP Error ${status}`;
+}
+
 const api = {
   async get(endpoint) {
     try {
       const res = await fetch(`${API_BASE}${endpoint}`);
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP Error ${res.status}`);
+        throw new Error(formatApiError(errorData, res.status));
       }
       return await res.json();
     } catch (err) {
@@ -38,7 +60,7 @@ const api = {
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP Error ${res.status}`);
+        throw new Error(formatApiError(errorData, res.status));
       }
       return await res.json();
     } catch (err) {
@@ -56,7 +78,7 @@ const api = {
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP Error ${res.status}`);
+        throw new Error(formatApiError(errorData, res.status));
       }
       return await res.json();
     } catch (err) {

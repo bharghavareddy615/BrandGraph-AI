@@ -33,12 +33,14 @@ const dashboardView = {
       const inReviewCount = stateCounts['Submitted for Review'] || 0;
       const revisionCount = stateCounts['Needs Revision'] || 0;
 
-      // Real health score formula based on draft approval velocity and penalty for active critical/high issues
+      // Normalized governance health score formula based on draft approval velocity and active issue density
       let healthScore = 100;
       if (totalDrafts > 0) {
         const approvedRatio = approvedCount / totalDrafts;
-        const penalty = (criticalCount * 12) + (highCount * 6);
-        healthScore = Math.max(10, Math.min(100, Math.round((approvedRatio * 70) + 30 - penalty)));
+        const activeDrafts = inReviewCount + revisionCount;
+        const baseScore = Math.round((approvedRatio * 45) + 55); // 55 - 100 baseline
+        const penaltyPerDraft = activeDrafts > 0 ? ((criticalCount * 14) + (highCount * 6)) / activeDrafts : 0;
+        healthScore = Math.max(15, Math.min(100, Math.round(baseScore - penaltyPerDraft)));
       }
 
       const evalAccuracy = evalData?.accuracy_percentage !== undefined ? evalData.accuracy_percentage : 100;
@@ -47,15 +49,15 @@ const dashboardView = {
 
       container.innerHTML = `
         <!-- Top Command Center Telemetry Banner -->
-        <div class="card" style="margin-bottom: 24px; padding: 18px 24px; background: linear-gradient(135deg, rgba(13, 20, 36, 0.9) 0%, rgba(18, 11, 38, 0.85) 100%); border-color: rgba(139, 92, 246, 0.3);">
-          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div class="card" style="margin-bottom: 24px; padding: 18px 24px; background: linear-gradient(135deg, rgba(128, 85, 232, 0.08) 0%, rgba(6, 182, 212, 0.04) 100%), var(--bg-card); border-color: rgba(128, 85, 232, 0.22); box-shadow: var(--shadow-sm);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: gap: 16px;">
             <div style="display: flex; align-items: center; gap: 16px;">
-              <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); display: flex; align-items: center; justify-content: center;">
+              <div style="width: 44px; height: 44px; border-radius: var(--radius-md); background: rgba(128, 85, 232, 0.1); border: 1px solid rgba(128, 85, 232, 0.28); display: flex; align-items: center; justify-content: center;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#brandGrad2)"/>
                   <defs>
                     <linearGradient id="brandGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="#8B5CF6"/>
+                      <stop offset="0%" stop-color="#8055E8"/>
                       <stop offset="100%" stop-color="#06B6D4"/>
                     </linearGradient>
                   </defs>
@@ -125,7 +127,7 @@ const dashboardView = {
             </div>
             <div class="stat-value" id="counterAccuracy" style="color: var(--accent-cyan);">${evalAccuracy}%</div>
             <div class="stat-subtitle">
-              <strong style="color: #6EE7B7;">${evalData?.passed_tests || 10} / ${evalData?.total_tests || 10} Passed</strong> &bull; Zero Hallucinations
+              <strong style="color: var(--accent-emerald);">${evalData?.passed_tests || 10} / ${evalData?.total_tests || 10} Passed</strong> &bull; Zero Hallucinations
             </div>
           </div>
 
@@ -155,14 +157,14 @@ const dashboardView = {
             <div style="position: relative; width: 160px; height: 160px; margin-bottom: 12px;">
               <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);">
                 <!-- Outer Ring Track -->
-                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(23, 32, 51, 0.08)" stroke-width="8"/>
                 <!-- Outer Ring Progress (Health) -->
                 <circle cx="50" cy="50" r="42" fill="none" stroke="url(#healthGrad)" stroke-width="8"
                         stroke-dasharray="263.89" stroke-dashoffset="${263.89 - (263.89 * healthScore) / 100}"
                         stroke-linecap="round" style="transition: stroke-dashoffset 0.8s ease;"/>
                 
                 <!-- Inner Ring Track -->
-                <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="5"/>
+                <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(23, 32, 51, 0.08)" stroke-width="5"/>
                 <!-- Inner Ring Progress (Eval Accuracy) -->
                 <circle cx="50" cy="50" r="30" fill="none" stroke="#06B6D4" stroke-width="5"
                         stroke-dasharray="188.5" stroke-dashoffset="${188.5 - (188.5 * evalAccuracy) / 100}"
@@ -170,15 +172,15 @@ const dashboardView = {
 
                 <defs>
                   <linearGradient id="healthGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#8B5CF6"/>
-                    <stop offset="100%" stop-color="#10B981"/>
+                    <stop offset="0%" stop-color="#8055E8"/>
+                    <stop offset="100%" stop-color="#0D9488"/>
                   </linearGradient>
                 </defs>
               </svg>
 
               <!-- Center Gauge Value -->
               <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="font-size: 1.85rem; font-weight: 800; color: #F8FAFC; line-height: 1;">
+                <div style="font-size: 1.85rem; font-weight: 800; color: var(--text-main); line-height: 1;">
                   ${healthScore}%
                 </div>
                 <div style="font-size: 0.68rem; color: ${healthScore >= 80 ? 'var(--accent-emerald)' : 'var(--accent-amber)'}; font-weight: 700; text-transform: uppercase; margin-top: 4px;">
@@ -330,7 +332,7 @@ const dashboardView = {
             <span style="color: var(--text-main);">${cat.label}</span>
             <span style="font-weight: 700; color: ${val > 0 ? cat.color : 'var(--text-subtle)'};">${val}</span>
           </div>
-          <div style="height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden;">
+          <div style="height: 5px; background: rgba(23, 32, 51, 0.08); border-radius: 4px; overflow: hidden;">
             <div style="width: ${pct}%; height: 100%; background: ${cat.color}; border-radius: 4px; transition: width 0.5s ease;"></div>
           </div>
         </div>
@@ -358,7 +360,7 @@ const dashboardView = {
             <span style="color: var(--text-main);">${st.label}</span>
             <span style="font-weight: 700; color: ${val > 0 ? st.color : 'var(--text-subtle)'};">${val} (${pct}%)</span>
           </div>
-          <div style="height: 5px; background: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden;">
+          <div style="height: 5px; background: rgba(23, 32, 51, 0.08); border-radius: 4px; overflow: hidden;">
             <div style="width: ${pct}%; height: 100%; background: ${st.color}; border-radius: 4px; transition: width 0.5s ease;"></div>
           </div>
         </div>

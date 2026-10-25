@@ -208,7 +208,7 @@ class BrandGraphStore:
         pos_3d = nx.spring_layout(target_graph, dim=3, seed=42, k=0.9, iterations=60)
 
         color_map = {
-            NodeType.BRAND.value: "#8B5CF6",           # Violet
+            NodeType.BRAND.value: "#8055E8",           # Violet
             NodeType.PRODUCT.value: "#06B6D4",         # Cyan
             NodeType.RULE.value: "#EF4444",            # Red
             NodeType.PREFERRED_TERM.value: "#10B981",  # Emerald

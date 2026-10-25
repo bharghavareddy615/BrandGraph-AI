@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Query, status
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -63,6 +64,17 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/js/") or request.url.path.startswith("/css/") or request.url.path in ("/", "/app"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
+
 # -----------------------------------------------------------------------------
 # REST API Endpoints
 # -----------------------------------------------------------------------------
@@ -94,6 +106,7 @@ def get_dashboard_metrics() -> Dict[str, Any]:
 
 
 @app.get("/api/brand/rules", tags=["Brand Knowledge"])
+@app.get("/api/brand/knowledge", tags=["Brand Knowledge"])
 def get_brand_knowledge() -> Dict[str, Any]:
     """Returns all approved brand rules, products, terms, sources, and disclaimers."""
     return get_all_sample_data()
@@ -106,9 +119,16 @@ def get_brand_graph(product_id: Optional[str] = None) -> Dict[str, Any]:
 
 
 @app.get("/api/evidence/search", tags=["Evidence Explorer"])
-def search_evidence(q: str = Query(..., min_length=1), top_k: int = 5) -> Dict[str, Any]:
+def search_evidence(q: str = Query("", min_length=0), top_k: int = 5) -> Dict[str, Any]:
     """Queries the backend evidence retriever and returns grounded matches with relevance scores."""
-    context = review_service.retriever.retrieve_with_context(q, top_k=top_k)
+    if not q or not q.strip():
+        return {
+            "query": "",
+            "evidence_status": "not_applicable",
+            "results": [],
+            "linked_claims": [],
+        }
+    context = review_service.retriever.retrieve_with_context(q.strip(), top_k=top_k)
     return {
         "query": q,
         "evidence_status": context["evidence_status"].value,
@@ -120,11 +140,9 @@ def search_evidence(q: str = Query(..., min_length=1), top_k: int = 5) -> Dict[s
 @app.post("/api/review", tags=["Content Review"])
 def review_content(request: ReviewRequest) -> Dict[str, Any]:
     """Runs deterministic rule checks, RAG evidence retrieval, and optional AI review."""
-    if not request.content or not request.content.strip():
-        raise HTTPException(status_code=400, detail="Content cannot be empty.")
-
+    content = (request.content or "").strip()
     draft = review_service.review_draft(
-        content=request.content,
+        content=content,
         title=request.title or "Untitled Draft",
         author=request.author or "Content Creator",
         product_id=request.product_id or "PROD-COPILOT",
@@ -271,7 +289,19 @@ def get_settings_and_disclosures() -> Dict[str, Any]:
 
 
 # -----------------------------------------------------------------------------
-# Static Frontend Serving
+# Static Frontend Serving & HTML Routes
 # -----------------------------------------------------------------------------
+@app.get("/", include_in_schema=False)
+def serve_landing():
+    """Serves the Forma-inspired BrandGraph AI landing page."""
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+@app.get("/app", include_in_schema=False)
+def serve_app():
+    """Serves the BrandGraph AI Governance Command Center."""
+    return FileResponse(FRONTEND_DIR / "app.html")
+
+
 if FRONTEND_DIR.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

@@ -372,12 +372,20 @@ class DatabaseManager:
             state_counts = {r["current_state"]: r["count"] for r in cursor.fetchall()}
 
             cursor.execute("""
-            SELECT category, COUNT(*) as count FROM findings WHERE dismissed = 0 GROUP BY category;
+            SELECT f.category, COUNT(*) as count 
+            FROM findings f
+            JOIN drafts d ON f.draft_id = d.id
+            WHERE f.dismissed = 0 AND d.current_state != 'Approved'
+            GROUP BY f.category;
             """)
             category_counts = {r["category"]: r["count"] for r in cursor.fetchall()}
 
             cursor.execute("""
-            SELECT severity, COUNT(*) as count FROM findings WHERE dismissed = 0 GROUP BY severity;
+            SELECT f.severity, COUNT(*) as count 
+            FROM findings f
+            JOIN drafts d ON f.draft_id = d.id
+            WHERE f.dismissed = 0 AND d.current_state != 'Approved'
+            GROUP BY f.severity;
             """)
             severity_counts = {r["severity"]: r["count"] for r in cursor.fetchall()}
 

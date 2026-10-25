@@ -133,3 +133,80 @@ def test_brand_graph_product_filter():
     node_ids = [n["id"] for n in data["nodes"]]
     assert "PROD-COPILOT" in node_ids
 
+
+def test_empty_content_and_search_resilience():
+    # Empty review content should return 200 with Needs Revision rather than crashing
+    rev_res = client.post("/api/review", json={"content": "", "title": "Empty Draft"})
+    assert rev_res.status_code == 200
+    assert rev_res.json()["current_state"] == "Needs Revision"
+
+    # Empty search query should return 200 with empty results rather than crashing
+    search_res = client.get("/api/evidence/search?q=")
+    assert search_res.status_code == 200
+    assert len(search_res.json()["results"]) == 0
+
+
+def test_dismiss_and_rewrite_endpoints():
+    # Create draft with violations
+    rev_res = client.post("/api/review", json={
+        "content": "Inkloom Bot is 100% bug-free.",
+        "title": "Rewrite Test",
+    })
+    assert rev_res.status_code == 200
+    draft = rev_res.json()
+    draft_id = draft["id"]
+    findings = draft["findings"]
+    assert len(findings) > 0
+
+    # Dismiss first finding
+    dis_res = client.post(f"/api/drafts/{draft_id}/dismiss", json={
+        "finding_id": findings[0]["id"],
+        "reason": "Auditor waiver",
+    })
+    assert dis_res.status_code == 200
+
+    # Case-insensitive status transition
+    stat_res = client.patch(f"/api/drafts/{draft_id}/status", json={
+        "new_state": "approved",
+        "reviewer": "QA Lead",
+    })
+    assert stat_res.status_code == 200
+    assert stat_res.json()["new_state"] == "Approved"
+
+
+def test_dashboard_active_violations_filter_approved_drafts():
+    """Regression test ensuring approved drafts do not count towards active policy violations."""
+    dash_before = client.get("/api/dashboard").json()["metrics"]
+    initial_total_issues = sum(dash_before.get("category_counts", {}).values())
+
+    # Create new draft with known violations
+    rev_res = client.post("/api/review", json={
+        "content": "Inkloom Bot is guaranteed 100% bug-free.",
+        "title": "Active Violation Regression Test",
+        "author": "QA Tester",
+    })
+    assert rev_res.status_code == 200
+    draft = rev_res.json()
+    draft_id = draft["id"]
+    assert draft["current_state"] == "Needs Revision"
+    new_violations_count = len(draft["findings"])
+    assert new_violations_count > 0
+
+    dash_mid = client.get("/api/dashboard").json()["metrics"]
+    mid_total_issues = sum(dash_mid.get("category_counts", {}).values())
+    assert mid_total_issues == initial_total_issues + new_violations_count
+
+    # Approve draft
+    approve_res = client.patch(f"/api/drafts/{draft_id}/status", json={
+        "new_state": "Approved",
+        "reviewer": "Compliance Auditor",
+    })
+    assert approve_res.status_code == 200
+
+    dash_after = client.get("/api/dashboard").json()["metrics"]
+    after_total_issues = sum(dash_after.get("category_counts", {}).values())
+    # The active issues should now exclude the approved draft
+    assert after_total_issues == initial_total_issues
+
+
+

@@ -71,7 +71,8 @@ const knowledgeView = {
         if (t === tabName) {
           btn.classList.add('active');
           btn.style.borderColor = 'var(--accent-primary)';
-          btn.style.color = '#DDD6FE';
+          btn.style.color = 'var(--accent-primary)';
+          btn.style.fontWeight = '700';
         } else {
           btn.classList.remove('active');
           btn.style.borderColor = 'var(--border-color)';
@@ -124,7 +125,7 @@ const knowledgeView = {
     container.innerHTML = `
       <div class="card" style="padding: 0; overflow: hidden;">
         <!-- Command Center Graph Header -->
-        <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); flex-wrap: wrap; gap: 12px;">
+        <div style="padding: 14px 20px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); flex-wrap: wrap; gap: 12px;">
           <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
             <div>
               <strong style="font-size: 0.9375rem; letter-spacing: -0.01em;">Brand Knowledge Graph</strong>
@@ -145,7 +146,7 @@ const knowledgeView = {
 
             <!-- Subgraph Filter -->
             <select id="graphProductFilter" onchange="knowledgeView.filterByProduct(this.value)"
-                    style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); font-size: 0.75rem; padding: 5px 10px; outline: none; cursor: pointer;">
+                    style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-main); font-size: 0.75rem; padding: 5px 10px; outline: none; cursor: pointer;">
               <option value="ALL" ${this.selectedProductId === 'ALL' ? 'selected' : ''}>All Graph Entities</option>
               <option value="PROD-COPILOT" ${this.selectedProductId === 'PROD-COPILOT' ? 'selected' : ''}>Inkloom Copilot Subgraph</option>
               <option value="PROD-SENTINEL" ${this.selectedProductId === 'PROD-SENTINEL' ? 'selected' : ''}>Inkloom Sentinel Subgraph</option>
@@ -219,8 +220,8 @@ const knowledgeView = {
         </div>
 
         <!-- Shared Graph Legend -->
-        <div class="graph-legend" style="position: static; border-radius: 0; border-left: none; border-right: none; background: rgba(11, 15, 25, 0.85);">
-          <div class="legend-item"><div class="legend-color" style="background: #8B5CF6;"></div> Brand Core</div>
+        <div class="graph-legend" style="position: static; border-radius: 0; border-left: none; border-right: none; background: #0A0F1D; color: #94A3B8;">
+          <div class="legend-item"><div class="legend-color" style="background: #8055E8;"></div> Brand Core</div>
           <div class="legend-item"><div class="legend-color" style="background: #06B6D4;"></div> Product</div>
           <div class="legend-item"><div class="legend-color" style="background: #EF4444;"></div> Rule</div>
           <div class="legend-item"><div class="legend-color" style="background: #10B981;"></div> Preferred Term</div>
@@ -231,7 +232,7 @@ const knowledgeView = {
         </div>
 
         <!-- Node Inspector Drawer (Shown on click in either 3D or 2D) -->
-        <div id="nodeDetailDrawer" style="display: none; padding: 18px 24px; background: rgba(11, 15, 25, 0.96); border-top: 1px solid var(--border-color); animation: fadeIn 0.2s ease;">
+        <div id="nodeDetailDrawer" style="display: none; padding: 18px 24px; background: var(--bg-card); border-top: 1px solid var(--border-color); animation: fadeIn 0.2s ease;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
             <div id="drawerNodeTitle" style="font-weight: 700; font-size: 1rem;"></div>
             <button class="btn btn-secondary btn-sm" onclick="document.getElementById('nodeDetailDrawer').style.display='none'">Close &times;</button>
@@ -278,6 +279,9 @@ const knowledgeView = {
   cleanup3D() {
     if (this.threeState) {
       if (this.threeState.animId) cancelAnimationFrame(this.threeState.animId);
+      if (this.threeState.resizeObserver) {
+        this.threeState.resizeObserver.disconnect();
+      }
       if (this.threeState.renderer) {
         this.threeState.renderer.dispose();
         if (this.threeState.renderer.domElement && this.threeState.renderer.domElement.parentNode) {
@@ -536,10 +540,12 @@ const knowledgeView = {
       edgeLines,
       energyPhotons,
       starField,
+      resizeObserver,
       animId: null,
     };
 
     const animate = () => {
+      if (!this.threeState) return;
       this.threeState.animId = requestAnimationFrame(animate);
 
       // Auto-Orbit
@@ -986,7 +992,7 @@ const knowledgeView = {
             <tbody>
               ${preferred.map(pt => `
                 <tr>
-                  <td style="font-weight: 700; color: #6EE7B7;">"${escapeHtml(pt.term)}"</td>
+                  <td style="font-weight: 700; color: var(--accent-emerald);">"${escapeHtml(pt.term)}"</td>
                   <td style="color: var(--text-muted); text-decoration: line-through;">${escapeHtml(pt.preferred_for)}</td>
                   <td style="font-size: 0.75rem; color: var(--text-subtle);">${escapeHtml(pt.context)}</td>
                 </tr>
@@ -1011,9 +1017,9 @@ const knowledgeView = {
             <tbody>
               ${prohibited.map(pr => `
                 <tr>
-                  <td style="font-weight: 700; color: #FDA4AF; font-family: var(--font-mono);">"${escapeHtml(pr.term)}"</td>
+                  <td style="font-weight: 700; color: var(--accent-rose); font-family: var(--font-mono);">"${escapeHtml(pr.term)}"</td>
                   <td style="font-size: 0.75rem; color: var(--text-muted);">${escapeHtml(pr.reason)}</td>
-                  <td style="font-size: 0.75rem; color: #6EE7B7;">${escapeHtml(pr.recommended_alternative || 'N/A')}</td>
+                  <td style="font-size: 0.75rem; color: var(--accent-emerald);">${escapeHtml(pr.recommended_alternative || 'N/A')}</td>
                 </tr>
               `).join('')}
             </tbody>

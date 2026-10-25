@@ -39,6 +39,7 @@ const workflowView = {
         submitted: drafts.filter(d => d.current_state === 'Submitted for Review').length,
         needsRevision: drafts.filter(d => d.current_state === 'Needs Revision').length,
         approved: drafts.filter(d => d.current_state === 'Approved').length,
+        rejected: drafts.filter(d => d.current_state === 'Rejected').length,
         draft: drafts.filter(d => d.current_state === 'Draft').length,
       };
 
@@ -68,6 +69,9 @@ const workflowView = {
               <button class="filter-pill ${this.currentFilter === 'Approved' ? 'active' : ''}" onclick="workflowView.setFilter('Approved')">
                 Approved (${counts.approved})
               </button>
+              <button class="filter-pill ${this.currentFilter === 'Rejected' ? 'active' : ''}" onclick="workflowView.setFilter('Rejected')">
+                Rejected (${counts.rejected})
+              </button>
               <button class="filter-pill ${this.currentFilter === 'Draft' ? 'active' : ''}" onclick="workflowView.setFilter('Draft')">
                 Drafts (${counts.draft})
               </button>
@@ -86,7 +90,7 @@ const workflowView = {
               ` : filteredDrafts.map(d => `
                 <div class="draft-queue-item ${d.id === this.selectedDraftId ? 'active' : ''}" 
                      onclick="workflowView.selectDraft('${d.id}')"
-                     style="padding: 12px; border-radius: var(--radius-sm); border: 1px solid ${d.id === this.selectedDraftId ? 'var(--accent-primary)' : 'var(--border-color)'}; background: ${d.id === this.selectedDraftId ? 'rgba(139, 92, 246, 0.12)' : '#0B0F19'}; cursor: pointer; transition: all 0.15s ease;">
+                     style="padding: 12px; border-radius: var(--radius-sm); border: 1px solid ${d.id === this.selectedDraftId ? 'var(--accent-primary)' : 'var(--glass-border)'}; background: ${d.id === this.selectedDraftId ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0.08) 100%)' : 'var(--bg-glass-input)'}; backdrop-filter: var(--glass-blur-sm); -webkit-backdrop-filter: var(--glass-blur-sm); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); cursor: pointer; transition: all 0.15s ease;">
                   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
                     <span style="font-weight: 700; font-size: 0.875rem; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">
                       ${escapeHtml(d.title || 'Untitled Draft')}
@@ -182,7 +186,7 @@ const workflowView = {
       <!-- Draft Content Body -->
       <div style="margin-bottom: 24px;">
         <h4 style="font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; color: var(--text-subtle); margin-bottom: 8px;">Current Content Body</h4>
-        <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; font-size: 0.9375rem; line-height: 1.6; color: var(--text-main); white-space: pre-wrap;">
+        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 16px; font-size: 0.9375rem; line-height: 1.6; color: var(--text-main); white-space: pre-wrap;">
 ${escapeHtml(draft.content || '(Draft content is empty)')}
         </div>
       </div>
@@ -197,7 +201,7 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
         ` : `
           <div style="display: flex; flex-direction: column; gap: 8px;">
             ${draft.findings.map(f => `
-              <div style="background: #0B0F19; border: 1px solid var(--border-color); padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.8125rem;">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: var(--radius-sm); font-size: 0.8125rem;">
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="badge badge-${f.severity}">${f.severity}</span>
@@ -224,7 +228,7 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
                   <strong style="color: var(--accent-amber);">"${escapeHtml(f.matched_text)}"</strong> &bull; ${escapeHtml(f.explanation)}
                 </div>
                 ${f.suggested_rewrite ? `
-                  <div style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(16, 185, 129, 0.08); padding: 6px 10px; border-radius: 4px; margin-top: 6px;">
+                  <div style="font-size: 0.75rem; color: var(--accent-emerald); background: rgba(13, 148, 136, 0.08); padding: 6px 10px; border-radius: 4px; margin-top: 6px;">
                     <strong>Approved Alternative:</strong> "${escapeHtml(f.suggested_rewrite)}"
                   </div>
                 ` : ''}
@@ -243,7 +247,7 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
             ${comments.length === 0 ? `
               <div style="font-size: 0.78rem; color: var(--text-muted);">No reviewer comments yet.</div>
             ` : comments.map(c => `
-              <div style="background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px;">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 10px;">
                 <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-subtle); margin-bottom: 4px;">
                   <strong style="color: var(--accent-cyan);">${escapeHtml(c.author)}</strong>
                   <span>${new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -255,7 +259,7 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
 
           <div style="display: flex; gap: 8px;">
             <input type="text" id="inputComment" placeholder="Add reviewer note or feedback..." 
-                   style="flex: 1; background: #0B0F19; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text-main); font-size: 0.8125rem; outline: none;">
+                   style="flex: 1; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text-main); font-size: 0.8125rem; outline: none;">
             <button class="btn btn-primary btn-sm" onclick="workflowView.submitComment('${draft.id}')">Post</button>
           </div>
         </div>
@@ -274,7 +278,7 @@ ${escapeHtml(draft.content || '(Draft content is empty)')}
             ${decisions.length === 0 ? `
               <div style="font-size: 0.78rem; color: var(--text-muted);">No historical transitions recorded.</div>
             ` : decisions.map(d => `
-              <div style="background: #0B0F19; border: 1px solid var(--border-color); border-left: 3px solid var(--accent-emerald); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem;">
+              <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-left: 3px solid var(--accent-emerald); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 0.78rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; color: var(--text-subtle); margin-bottom: 3px;">
                   <span style="font-weight: 600; color: var(--accent-cyan);">${escapeHtml(d.reviewer)}</span>
                   <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-subtle);">${d.id || 'EVT-LOG'} &bull; ${new Date(d.timestamp).toLocaleDateString()} ${new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
