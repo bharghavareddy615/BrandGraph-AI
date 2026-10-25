@@ -56,3 +56,6 @@ htmlcov/
 
 # Streamlit
 .streamlit/
+
+# Binaries & Tunnels
+cloudflared.exe

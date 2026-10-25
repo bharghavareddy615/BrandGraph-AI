@@ -5,10 +5,10 @@
 const API_BASE = (() => {
   if (typeof window === 'undefined') return 'http://localhost:8000';
   if (window.location.protocol === 'file:') return 'http://localhost:8000';
-  if (!window.location.port || window.location.port === '80' || window.location.port === '443' || window.location.port === '8000') {
+  if (window.location.origin && window.location.origin !== 'null') {
     return window.location.origin;
   }
-  return 'http://localhost:8000';
+  return '';
 })();
 
 window.escapeHtml = function(str) {
